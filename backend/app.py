@@ -686,7 +686,7 @@ def get_dashboard_stats():
         from collections import defaultdict
 
         hackathons = fetch_all_hackathons(organizer_email)
-        hackathon_ids = [h["_id"] for h in hackathons]
+        hackathon_ids = [h["id"] for h in hackathons]
         
         participants = fetch_participants_for_hackathons(hackathon_ids)
         
