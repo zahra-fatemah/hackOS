@@ -39,12 +39,13 @@ export function StatCard({
       />
       <div className="flex items-center justify-between">
         <div className="text-xs uppercase tracking-wider text-muted-foreground">{label}</div>
-        <div className="grid h-8 w-8 place-items-center rounded-lg bg-white/5">
-          <Icon className="h-4 w-4" />
+        <div className="relative grid h-8 w-8 place-items-center rounded-lg bg-white/5">
+          <div className="absolute inset-0 rounded-lg border border-brand/30 animate-[ring-pulse_3s_ease-in-out_infinite]" />
+          <Icon className="relative z-10 h-4 w-4 text-brand" />
         </div>
       </div>
       <div className="mt-4 flex items-end gap-1">
-        <motion.span className="text-3xl font-semibold tracking-tight">{rounded}</motion.span>
+        <motion.span className="text-3xl font-semibold tracking-tight text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]">{rounded}</motion.span>
         {suffix && <span className="mb-1 text-muted-foreground">{suffix}</span>}
       </div>
       {delta && <div className="mt-1 text-xs text-emerald-400">{delta}</div>}

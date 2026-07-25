@@ -46,11 +46,26 @@ export const Route = createFileRoute("/participant")({
 
     const nav = [
       { to: "/participant", label: "Dashboard", icon: Home },
-      { to: "/participant/explore", label: "Explore Hackathons", icon: Compass },
-      { to: "/participant/registrations", label: "My Registrations", icon: Ticket },
-      { to: hasZeroRegs ? "#" : qrLink, label: "My QR", icon: QrCode, disabled: hasZeroRegs },
-      { to: "/participant/profile", label: "Profile", icon: User },
-      { to: "/participant/settings", label: "Settings", icon: Settings },
+      {
+        label: "Explore",
+        children: [
+          { to: "/participant/explore", label: "Explore Hackathons", icon: Compass },
+        ]
+      },
+      {
+        label: "My Activity",
+        children: [
+          { to: "/participant/registrations", label: "My Registrations", icon: Ticket },
+          { to: hasZeroRegs ? "#" : qrLink, label: "My QR Pass", icon: QrCode, disabled: hasZeroRegs },
+        ]
+      },
+      {
+        label: "Account",
+        children: [
+          { to: "/participant/profile", label: "Profile", icon: User },
+          { to: "/participant/settings", label: "Settings", icon: Settings },
+        ]
+      }
     ];
 
     return (

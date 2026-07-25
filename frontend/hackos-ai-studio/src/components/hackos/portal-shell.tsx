@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AmbientBackground, MouseGlow } from "./background";
+import { CustomCursor } from "./custom-cursor";
 import { Logo } from "./logo";
 import { useAuth } from "@/store/auth";
 import { cn } from "@/lib/utils";
@@ -19,11 +20,12 @@ import { Button } from "@/components/ui/button";
 import { CommandPalette } from "./command-palette";
 
 export type NavItem = {
-  to: string;
+  to?: string;
   label: string;
-  icon: LucideIcon;
+  icon?: LucideIcon;
   badge?: string;
   disabled?: boolean;
+  children?: NavItem[];
 };
 
 export function PortalShell({
@@ -41,6 +43,24 @@ export function PortalShell({
   const navigate = useNavigate();
   const { name, logout } = useAuth();
   const loginTime = useAuth((s) => s.loginTime);
+
+  // Initialize expanded groups based on active route
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() => {
+    const initialState: Record<string, boolean> = {};
+    nav.forEach(item => {
+      if (item.children) {
+        const isActive = item.children.some(child => 
+          child.to && (pathname === child.to || (child.to !== `/${base}` && pathname.startsWith(child.to)))
+        );
+        initialState[item.label] = isActive;
+      }
+    });
+    return initialState;
+  });
+
+  const toggleGroup = (label: string) => {
+    setExpandedGroups(prev => ({ ...prev, [label]: !prev[label] }));
+  };
 
   // Enforce 1-hour session limit
   useEffect(() => {
@@ -69,13 +89,14 @@ export function PortalShell({
   return (
     <div className="relative flex min-h-screen">
       <AmbientBackground />
+      <CustomCursor />
       <MouseGlow />
 
       {/* Sidebar */}
       <motion.aside
         animate={{ width: collapsed ? 76 : 248 }}
         transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-        className="sticky top-0 hidden h-screen shrink-0 flex-col border-r border-white/5 bg-sidebar/60 backdrop-blur-xl md:flex"
+        className="sticky top-0 hidden h-screen shrink-0 flex-col border-r border-sidebar-border bg-sidebar/60 backdrop-blur-xl md:flex"
       >
         <div className="flex h-16 items-center justify-between px-4">
           {!collapsed ? (
@@ -94,28 +115,87 @@ export function PortalShell({
           </button>
         </div>
 
-        <div className="px-3">
+        <div className="px-3 pb-4">
           <div className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
             {!collapsed && (base === "participant" ? "Participant" : "Organizer")}
           </div>
-          <nav className="space-y-1">
+          <motion.nav 
+            className="space-y-4"
+            key={pathname + "-nav"}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.9, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+          >
             {nav.map((item) => {
-              const active =
-                pathname === item.to || (item.to !== `/${base}` && pathname.startsWith(item.to));
-              const Icon = item.icon;
+              if (item.children) {
+                const isOpen = expandedGroups[item.label];
+                return (
+                  <div key={item.label} className="space-y-1">
+                    {!collapsed && (
+                      <button 
+                        onClick={() => toggleGroup(item.label)}
+                        className="flex w-full items-center justify-between px-2 py-1 text-left font-mono text-[0.68rem] uppercase tracking-[0.15em] text-[#E1F5EC]/35 hover:text-white/60 transition-colors"
+                      >
+                        {item.label}
+                        <ChevronsRight className={cn("h-3 w-3 transition-transform duration-150 ease-out", isOpen && "rotate-90")} />
+                      </button>
+                    )}
+                    <AnimatePresence initial={false}>
+                      {(isOpen || collapsed) && (
+                        <motion.div
+                          initial={collapsed ? false : { height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.15, ease: "easeOut" }}
+                          className="overflow-hidden space-y-1"
+                        >
+                          {item.children.map((child) => {
+                            const active = child.to && (pathname === child.to || (child.to !== `/${base}` && pathname.startsWith(child.to)));
+                            const Icon = child.icon!;
+                            return (
+                              <Link
+                                key={child.label}
+                                to={child.disabled ? "#" : child.to!}
+                                className={cn(
+                                  "group relative flex items-center gap-3 rounded-r-xl py-2 text-sm transition-colors duration-150 border-l-2",
+                                  collapsed ? "px-3" : "pl-7 pr-3",
+                                  active
+                                    ? "bg-[rgba(0,255,102,0.08)] text-[#00FF66] border-[#00FF66]"
+                                    : "text-muted-foreground hover:bg-white/5 hover:text-[#E1F5EC] border-transparent",
+                                  child.disabled && "opacity-50 pointer-events-none"
+                                )}
+                              >
+                                <Icon className="h-4 w-4 shrink-0" />
+                                {!collapsed && <span className="truncate">{child.label}</span>}
+                                {child.badge && !collapsed && (
+                                  <span className="ml-auto rounded-full bg-white/10 px-1.5 py-0.5 text-[10px]">
+                                    {child.badge}
+                                  </span>
+                                )}
+                              </Link>
+                            );
+                          })}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                );
+              }
+              
+              const active = item.to && (pathname === item.to || (item.to !== `/${base}` && pathname.startsWith(item.to)));
+              const Icon = item.icon!;
               return (
                 <Link
                   key={item.label}
-                  to={item.disabled ? "#" : item.to}
+                  to={item.disabled ? "#" : item.to!}
                   className={cn(
-                    "group relative flex items-center gap-3 rounded-r-xl px-3 py-2 text-sm transition-colors duration-200 border-l-2",
+                    "group relative flex items-center gap-3 rounded-r-xl px-3 py-2 text-sm transition-colors duration-150 border-l-2",
                     active
-                      ? "bg-accent text-foreground border-brand"
-                      : "text-muted-foreground hover:bg-white/5 hover:text-brand border-transparent",
+                      ? "bg-[rgba(0,255,102,0.08)] text-[#00FF66] border-[#00FF66]"
+                      : "text-muted-foreground hover:bg-white/5 hover:text-[#E1F5EC] border-transparent",
                     item.disabled && "opacity-50 pointer-events-none"
                   )}
                 >
-                  {/* Removed absolute layoutId since we just use bg-accent for active state now per instructions */}
                   <Icon className="h-4 w-4 shrink-0" />
                   <AnimatePresence initial={false}>
                     {!collapsed && (
@@ -137,12 +217,17 @@ export function PortalShell({
                 </Link>
               );
             })}
-          </nav>
+          </motion.nav>
         </div>
 
         <div className="mt-auto p-3">
           {!collapsed && (
-            <div className="mb-3 rounded-2xl p-3 bg-card border border-border">
+            <motion.div 
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 2.1, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+              className="mb-3 rounded-2xl p-3 bg-card border border-border"
+            >
               <div className="mb-2 flex items-center gap-2 text-xs">
                 <Sparkles className="h-3.5 w-3.5 text-brand" />
                 <span>AI Assistant</span>
@@ -150,10 +235,10 @@ export function PortalShell({
               <p className="text-[11px] leading-snug text-muted-foreground">
                 Ask HackOS anything — from PPT insights to seat maps.
               </p>
-              <Button size="sm" className="mt-3 w-full bg-gradient-brand text-foreground hover:opacity-90 animate-[glow-pulse_2s_infinite]">
+              <Button size="sm" className="mt-3 w-full bg-gradient-brand text-foreground hover:opacity-90 animate-[btn-breathe_3s_ease-in-out_infinite]">
                 Open assistant
               </Button>
-            </div>
+            </motion.div>
           )}
           <button
             onClick={() => {
@@ -198,10 +283,10 @@ export function PortalShell({
         <AnimatePresence mode="wait">
           <motion.main
             key={pathname}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.25 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.1 }}
             className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 md:px-8 md:py-10"
           >
             <Outlet />

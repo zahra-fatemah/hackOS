@@ -11,7 +11,7 @@ export function HackathonCard({ h, index = 0 }: { h: Hackathon; index?: number }
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-40px" }}
       transition={{ duration: 0.25, delay: index * 0.08, ease: "easeOut" }}
-      className="group bg-card relative overflow-hidden rounded-2xl border border-border transition-all duration-250 ease-out hover:-translate-y-1 hover:shadow-[0_8px_32px_rgba(0,255,102,0.08)]"
+      className="group glass relative overflow-hidden rounded-2xl border transition-all duration-300 ease-out hover:-translate-y-1 hover:border-[rgba(0,255,102,0.4)] hover:bg-white/5 hover:shadow-[0_8px_32px_rgba(0,255,102,0.15)]"
     >
       <div className="absolute inset-x-0 top-0 h-[2px] origin-left scale-x-0 bg-brand transition-transform duration-300 ease-out group-hover:scale-x-100 z-10" />
       <div className="relative h-32 overflow-hidden" style={{ background: h.banner }}>

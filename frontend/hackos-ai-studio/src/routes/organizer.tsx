@@ -4,16 +4,36 @@ import { PortalShell, MobileNav } from "@/components/hackos/portal-shell";
 
 const nav = [
   { to: "/organizer", label: "Dashboard", icon: Home },
-  { to: "/organizer/create", label: "Create Hackathon", icon: Sparkles, badge: "AI" },
-  { to: "/organizer/participants", label: "Manage Participants", icon: Users },
-  { to: "/organizer/ppt-analysis", label: "AI PPT Analysis", icon: BrainCircuit, badge: "AI" },
-  { to: "/organizer/seating", label: "Smart Seating", icon: Grid3x3 },
-  { to: "/organizer/entry", label: "Check-in", icon: LogIn },
-  { to: "/organizer/food", label: "Food Management", icon: Utensils },
-  { to: "/organizer/workshops", label: "Workshops", icon: Presentation },
-  { to: "/organizer/prizes", label: "Prize Distribution", icon: Trophy },
-  { to: "/organizer/scan-logs", label: "Scan Logs", icon: ClipboardList },
-  { to: "/organizer/settings", label: "Settings", icon: Settings },
+  {
+    label: "Event Management",
+    children: [
+      { to: "/organizer/create", label: "Create Event", icon: Sparkles, badge: "AI" },
+      { to: "/organizer/participants", label: "Manage Participants", icon: Users },
+      { to: "/organizer/ppt-analysis", label: "PPT Analysis", icon: BrainCircuit, badge: "AI" },
+      { to: "/organizer/seating", label: "Smart Seating", icon: Grid3x3 },
+    ],
+  },
+  {
+    label: "QR & Scanning",
+    children: [
+      { to: "/organizer/entry", label: "Entry Check-in", icon: LogIn },
+      { to: "/organizer/food", label: "Food Management", icon: Utensils },
+      { to: "/organizer/workshops", label: "Workshops", icon: Presentation },
+      { to: "/organizer/prizes", label: "Prize Distribution", icon: Trophy },
+    ],
+  },
+  {
+    label: "Analytics",
+    children: [
+      { to: "/organizer/scan-logs", label: "Scan History Log", icon: ClipboardList },
+    ],
+  },
+  {
+    label: "Settings",
+    children: [
+      { to: "/organizer/settings", label: "Settings", icon: Settings },
+    ],
+  }
 ];
 
 const titleFor = (path: string) => {

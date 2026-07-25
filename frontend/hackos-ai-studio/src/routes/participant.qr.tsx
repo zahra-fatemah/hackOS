@@ -81,8 +81,9 @@ function MyQr() {
             <div className="mt-1 text-lg font-semibold text-white">{p.full_name}</div>
             <div className="text-xs text-white/80">{p.college} · {p.registration_id}</div>
           </div>
-          <div className="relative mt-20 grid place-items-center rounded-2xl bg-white p-5">
+          <div className="relative mt-20 grid place-items-center overflow-hidden rounded-2xl bg-white p-5">
             <img src={qrUrl} alt="QR Pass" className="h-full w-full object-contain mix-blend-multiply" />
+            <div className="absolute inset-x-0 h-0.5 bg-brand shadow-[0_0_8px_#00FF66] animate-[qr-scan_2.5s_linear_infinite]" />
           </div>
           <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
             <div>Issued {new Date(p.created_at).toLocaleDateString()}</div>
