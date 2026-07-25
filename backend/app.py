@@ -55,6 +55,7 @@ from utils.mongodb import (
     verify_otp,
     get_participant_activity,
     get_organizer_activity,
+    seating_assignments_col,
 )
 from utils.email_service import generate_otp, send_otp_email
 from utils.scan_code_service import (
@@ -87,13 +88,18 @@ app.register_blueprint(qr_bp)
 CORS(
     app,
     origins=[
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "http://localhost:4173",
-        "http://localhost:8080",
+        "http://192.168.1.67:3000",
+        "http://192.168.1.67:5173",
+        "http://192.168.1.67:4173",
+        "http://192.168.1.67:8080",
         "http://127.0.0.1:3000",
         "http://127.0.0.1:5173",
         "http://127.0.0.1:8080",
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://localhost:8080",
+        "http://192.168.1.67:5000",
+        "http://localhost:5000"
     ],
     supports_credentials=True,
 )
@@ -529,7 +535,8 @@ def get_organizer_food_stats():
         hackathons = fetch_all_hackathons(organizer_email)
         h_ids = [h["id"] for h in hackathons]
         participants = fetch_participants_for_hackathons(h_ids)
-        claims = fetch_food_claims_for_hackathons(h_ids)
+        from utils.mongodb import fetch_meal_logs_for_hackathons
+        claims = fetch_meal_logs_for_hackathons(h_ids)
     except Exception as exc:
         logger.error("MongoDB fetch failed: %s", exc)
         return error("Database error while fetching food stats.", status=500)
@@ -543,14 +550,14 @@ def get_organizer_food_stats():
         "recent": []
     }
     
-    sorted_claims = sorted(claims, key=lambda c: c["created_at"], reverse=True)[:5]
+    sorted_claims = sorted(claims, key=lambda c: c["claimed_at"], reverse=True)[:5]
     p_map = {p["id"]: p for p in participants}
     
     for c in sorted_claims:
         p = p_map.get(c["participant_id"])
         if p:
             from datetime import datetime
-            dt = datetime.fromisoformat(c["created_at"]) if isinstance(c["created_at"], str) else c["created_at"]
+            dt = datetime.fromisoformat(c["claimed_at"]) if isinstance(c["claimed_at"], str) else c["claimed_at"]
             stats["recent"].append({
                 "name": p["full_name"],
                 "meal": c["meal_type"],
@@ -1055,6 +1062,416 @@ def get_profile():
         logger.error("Failed to fetch profile: %s", exc)
         return error("Database error.", status=500)
 
+
+# ═════════════════════════════════════════════════════════════════════════════
+# SEATING OPTIMIZATION
+# ═════════════════════════════════════════════════════════════════════════════
+
+@app.post("/api/organizer/seating/optimize")
+def optimize_seating_route():
+    from services.seating_optimizer import optimize_seating
+    from utils.mongodb import seating_assignments_col
+    try:
+        payload = request.json or {}
+        hackathon_id = payload.get("hackathon_id")
+        tables = payload.get("tables", [])
+        
+        if not hackathon_id:
+            return error("hackathon_id is required.", status=400)
+            
+        participants = fetch_participants_by_hackathon(hackathon_id)
+        
+        # Group by college as team for now
+        team_map = {}
+        for p in participants:
+            t_name = p.get("college") or p.get("university") or "Independent"
+            if t_name not in team_map:
+                team_map[t_name] = {"id": t_name, "size": 0, "members": []}
+            team_map[t_name]["size"] += 1
+            team_map[t_name]["members"].append(p.get("full_name", "Unknown"))
+            
+        teams = list(team_map.values())
+        
+        result = optimize_seating(teams, tables)
+        
+        result["hackathon_id"] = hackathon_id
+        result["generated_at"] = datetime.now(timezone.utc).isoformat()
+        
+        seating_assignments_col().insert_one(result)
+        
+        if "_id" in result:
+            result["_id"] = str(result["_id"])
+            
+        return success(data=result, message="Seating optimization completed.")
+    except Exception as exc:
+        logger.exception("Failed to optimize seating: %s", exc)
+        return error("Internal server error during seating optimization.", status=500)
+
+
+@app.get("/api/organizer/seating/current")
+def get_current_seating():
+    from utils.mongodb import seating_assignments_col
+    hackathon_id = request.args.get("hackathon_id")
+    if not hackathon_id:
+        return error("hackathon_id is required.", status=400)
+        
+    doc = seating_assignments_col().find_one(
+        {"hackathon_id": hackathon_id},
+        sort=[("generated_at", -1)]
+    )
+    
+    if doc:
+        doc["_id"] = str(doc["_id"])
+        return success(data=doc)
+    else:
+        return success(data=None, message="No seating assignment found.")
+
+# ═════════════════════════════════════════════════════════════════════════════
+# FEATURE 4: AI SMART SEATING ARRANGEMENT
+# ═════════════════════════════════════════════════════════════════════════════
+
+@app.post("/api/generate-seating")
+def generate_seating():
+    from services.seating_service import generate_smart_seating
+    from utils.mongodb import seating_layouts_col, seat_assignments_col
+    try:
+        payload = request.json or {}
+        hackathon_id = payload.get("hackathon_id")
+        hall_name = payload.get("hall_name", "Main Hall")
+        rows = int(payload.get("rows", 0))
+        columns = int(payload.get("columns", 0))
+        tables = int(payload.get("tables", 0))
+        seats_per_table = int(payload.get("seats_per_table", 0))
+        generated_by = payload.get("generated_by", "Organizer")
+        
+        if not all([hackathon_id, rows > 0, columns > 0, tables > 0, seats_per_table > 0]):
+            return error("Missing or invalid required fields. Must be positive.", status=400)
+            
+        participants = fetch_participants_by_hackathon(hackathon_id)
+        if not participants:
+            return error("No participants found for this hackathon.", status=400)
+            
+        layout, assignments = generate_smart_seating(
+            participants, hackathon_id, hall_name, rows, columns, tables, seats_per_table, generated_by
+        )
+        
+        # Save to DB
+        layout_id = seating_layouts_col().insert_one(layout).inserted_id
+        if assignments:
+            seat_assignments_col().insert_many(assignments)
+            
+        layout["_id"] = str(layout_id)
+        return success(data=layout, message="Seating layout generated successfully.")
+    except ValueError as e:
+        return error(str(e), status=400)
+    except Exception as exc:
+        logger.exception("Seating generation failed: %s", exc)
+        return error("Internal server error.", status=500)
+
+@app.get("/api/seating/<hackathon_id>")
+def get_seating(hackathon_id):
+    from utils.mongodb import seating_layouts_col, seat_assignments_col
+    try:
+        layout = seating_layouts_col().find_one({"hackathon_id": hackathon_id}, sort=[("generated_at", -1)])
+        if not layout:
+            return success(data=None, message="No seating layout found.")
+            
+        assignments = list(seat_assignments_col().find({"hackathon_id": hackathon_id}, {"_id": 0}))
+        layout["_id"] = str(layout["_id"])
+        layout["assignments"] = assignments
+        
+        return success(data=layout)
+    except Exception as exc:
+        logger.exception("Failed to fetch seating: %s", exc)
+        return error("Internal server error.", status=500)
+
+@app.get("/api/table/<table_number>")
+def get_table(table_number):
+    from utils.mongodb import seat_assignments_col
+    try:
+        assignments = list(seat_assignments_col().find({"table_number": table_number}, {"_id": 0}))
+        if not assignments:
+            return success(data=None, message="Table not found or empty.")
+            
+        judge_ids = list(set([a.get("judge_id") for a in assignments if a.get("judge_id")]))
+        
+        data = {
+            "table_number": table_number,
+            "judge": judge_ids[0] if judge_ids else None,
+            "participants": assignments
+        }
+        return success(data=data)
+    except Exception as exc:
+        logger.exception("Failed to fetch table: %s", exc)
+        return error("Internal server error.", status=500)
+
+@app.get("/api/participant-seat/<participant_id>")
+def get_participant_seat(participant_id):
+    from utils.mongodb import seat_assignments_col
+    try:
+        assignment = seat_assignments_col().find_one({"participant_id": participant_id}, {"_id": 0})
+        if not assignment:
+            return error("Seat assignment not found.", status=404)
+            
+        p = fetch_participant_by_custom_id(participant_id)
+        if not p:
+            p = fetch_participant_by_id(participant_id)
+            
+        data = {
+            "participant_name": p.get("full_name") if p else "Unknown",
+            "table": assignment.get("table_number"),
+            "seat": assignment.get("seat_number"),
+            "hall": "Main Hall",
+            "judge": assignment.get("judge_id")
+        }
+        return success(data=data)
+    except Exception as exc:
+        logger.exception("Failed to fetch participant seat: %s", exc)
+        return error("Internal server error.", status=500)
+
+@app.delete("/api/seating/<hackathon_id>")
+def delete_seating(hackathon_id):
+    from utils.mongodb import seating_layouts_col, seat_assignments_col
+    try:
+        seating_layouts_col().delete_many({"hackathon_id": hackathon_id})
+        seat_assignments_col().delete_many({"hackathon_id": hackathon_id})
+        return success(message="Seating layout deleted successfully.")
+    except Exception as exc:
+        logger.exception("Failed to delete seating: %s", exc)
+        return error("Internal server error.", status=500)
+
+@app.post("/api/regenerate-seating")
+def regenerate_seating():
+    payload = request.json or {}
+    hackathon_id = payload.get("hackathon_id")
+    if not hackathon_id:
+        return error("hackathon_id is required.", status=400)
+    
+    # Delete old and regenerate via generate_seating
+    # We will simulate the request internally
+    from utils.mongodb import seating_layouts_col, seat_assignments_col
+    try:
+        seating_layouts_col().delete_many({"hackathon_id": hackathon_id})
+        seat_assignments_col().delete_many({"hackathon_id": hackathon_id})
+        return generate_seating()
+    except Exception as exc:
+        logger.exception("Failed to regenerate seating: %s", exc)
+        return error("Internal server error.", status=500)
+
+@app.get("/api/export-seating/<hackathon_id>")
+def export_seating(hackathon_id):
+    from utils.mongodb import seat_assignments_col
+    from utils.export_excel import generate_seating_excel
+    from flask import send_file
+    
+    try:
+        assignments = list(seat_assignments_col().find({"hackathon_id": hackathon_id}, {"_id": 0}))
+        if not assignments:
+            return error("No seating assignments found.", status=404)
+            
+        excel_io = generate_seating_excel(assignments)
+        
+        return send_file(
+            excel_io,
+            as_attachment=True,
+            download_name=f"seating_assignments_{hackathon_id}.xlsx",
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+    except Exception as exc:
+        logger.exception("Failed to export seating: %s", exc)
+        return error("Internal server error.", status=500)
+
+@app.get("/api/search-seat")
+def search_seat():
+    from utils.mongodb import seat_assignments_col
+    registration_id = request.args.get("registration_id")
+    if not registration_id:
+        return error("registration_id query param required.", status=400)
+        
+    try:
+        assignment = seat_assignments_col().find_one({"registration_id": registration_id}, {"_id": 0})
+        if not assignment:
+            return error("Seat assignment not found.", status=404)
+            
+        p = fetch_participant_by_custom_id(assignment.get("participant_id"))
+        if not p:
+            p = fetch_participant_by_id(assignment.get("participant_id"))
+            
+        data = {
+            "participant": p.get("full_name") if p else "Unknown",
+            "table": assignment.get("table_number"),
+            "seat": assignment.get("seat_number"),
+            "judge": assignment.get("judge_id")
+        }
+        return success(data=data)
+    except Exception as exc:
+        logger.exception("Failed to search seat: %s", exc)
+        return error("Internal server error.", status=500)
+
+# ═════════════════════════════════════════════════════════════════════════════
+# FEATURE: WINNER REWARDS & DIGITAL VOUCHER CENTER
+# ═════════════════════════════════════════════════════════════════════════════
+
+@app.post("/api/rewards")
+def create_reward():
+    from utils.mongodb import rewards_col
+    from datetime import datetime, timezone
+    try:
+        payload = request.json or {}
+        hackathon_id = payload.get("hackathon_id")
+        participant_id = payload.get("participant_id")
+        reward_platform = payload.get("reward_platform")
+        voucher_code = payload.get("voucher_code")
+        
+        if not all([hackathon_id, participant_id, reward_platform, voucher_code]):
+            return error("Missing required fields.", status=400)
+            
+        p = fetch_participant_by_custom_id(participant_id)
+        if not p:
+            p = fetch_participant_by_id(participant_id)
+        if not p:
+            return error("Participant not found.", status=404)
+            
+        if p.get("hackathon_id") != hackathon_id:
+            return error("Participant does not belong to this hackathon.", status=400)
+            
+        # Prevent duplicates
+        existing = rewards_col().find_one({
+            "hackathon_id": hackathon_id,
+            "participant_id": participant_id,
+            "status": "ACTIVE"
+        })
+        if existing:
+            return error("Participant already has an active reward for this hackathon.", status=400)
+            
+        now = datetime.now(timezone.utc).isoformat()
+        
+        doc = {
+            "hackathon_id": hackathon_id,
+            "participant_id": participant_id,
+            "registration_id": payload.get("registration_id", p.get("registration_id", "")),
+            "position": payload.get("position", "Winner"),
+            "reward_platform": reward_platform,
+            "reward_type": payload.get("reward_type", "Voucher"),
+            "voucher_value": payload.get("voucher_value", ""),
+            "voucher_code": voucher_code,
+            "organizer_message": payload.get("organizer_message", "Congratulations!"),
+            "issued_by": payload.get("issued_by", "Organizer"),
+            "issued_at": now,
+            "expiry_date": payload.get("expiry_date", ""),
+            "revealed": False,
+            "revealed_at": "",
+            "status": "ACTIVE"
+        }
+        
+        rewards_col().insert_one(doc)
+        return success(message="Reward created successfully.")
+    except Exception as exc:
+        logger.exception("Failed to create reward: %s", exc)
+        return error("Internal server error.", status=500)
+
+@app.get("/api/rewards/hackathon/<hackathon_id>")
+def get_hackathon_rewards(hackathon_id):
+    from utils.mongodb import rewards_col
+    from services.reward_service import process_rewards_for_client
+    try:
+        rewards = list(rewards_col().find({"hackathon_id": hackathon_id}, sort=[("issued_at", -1)]))
+        processed = process_rewards_for_client(rewards)
+        return success(data=processed)
+    except Exception as exc:
+        logger.exception("Failed to fetch hackathon rewards: %s", exc)
+        return error("Internal server error.", status=500)
+
+@app.get("/api/rewards/participant/<participant_id>")
+def get_participant_rewards(participant_id):
+    from utils.mongodb import rewards_col
+    from services.reward_service import process_rewards_for_client
+    try:
+        rewards = list(rewards_col().find({"participant_id": participant_id}, sort=[("issued_at", -1)]))
+        processed = process_rewards_for_client(rewards)
+        return success(data=processed)
+    except Exception as exc:
+        logger.exception("Failed to fetch participant rewards: %s", exc)
+        return error("Internal server error.", status=500)
+
+@app.post("/api/rewards/reveal")
+def reveal_reward():
+    from utils.mongodb import rewards_col
+    from bson.objectid import ObjectId
+    from datetime import datetime, timezone
+    try:
+        payload = request.json or {}
+        participant_id = payload.get("participant_id")
+        reward_id = payload.get("reward_id")
+        
+        if not all([participant_id, reward_id]):
+            return error("Missing participant_id or reward_id.", status=400)
+            
+        reward = rewards_col().find_one({"_id": ObjectId(reward_id)})
+        if not reward:
+            return error("Reward not found.", status=404)
+            
+        if reward.get("participant_id") != participant_id:
+            return error("Unauthorized. You do not own this reward.", status=403)
+            
+        if reward.get("status") != "ACTIVE":
+            return error(f"Cannot reveal voucher. Status is {reward.get('status')}", status=400)
+            
+        now = datetime.now(timezone.utc).isoformat()
+        
+        rewards_col().update_one(
+            {"_id": ObjectId(reward_id)},
+            {"$set": {"revealed": True, "revealed_at": now}}
+        )
+        
+        return success(data={"voucher_code": reward.get("voucher_code")})
+    except Exception as exc:
+        logger.exception("Failed to reveal reward: %s", exc)
+        return error("Internal server error.", status=500)
+
+@app.post("/api/rewards/redeemed")
+def redeem_reward():
+    from utils.mongodb import rewards_col
+    from bson.objectid import ObjectId
+    try:
+        payload = request.json or {}
+        reward_id = payload.get("reward_id")
+        
+        if not reward_id:
+            return error("Missing reward_id.", status=400)
+            
+        res = rewards_col().update_one(
+            {"_id": ObjectId(reward_id)},
+            {"$set": {"status": "REDEEMED"}}
+        )
+        if res.modified_count == 0:
+            return error("Reward not found or already redeemed.", status=404)
+            
+        return success(message="Reward marked as redeemed.")
+    except Exception as exc:
+        logger.exception("Failed to redeem reward: %s", exc)
+        return error("Internal server error.", status=500)
+
+@app.delete("/api/rewards/<reward_id>")
+def delete_reward(reward_id):
+    from utils.mongodb import rewards_col
+    from bson.objectid import ObjectId
+    try:
+        rewards_col().delete_one({"_id": ObjectId(reward_id)})
+        return success(message="Reward deleted successfully.")
+    except Exception as exc:
+        logger.exception("Failed to delete reward: %s", exc)
+        return error("Internal server error.", status=500)
+
+@app.get("/api/rewards/dashboard/<hackathon_id>")
+def get_reward_dashboard(hackathon_id):
+    from services.reward_service import get_reward_dashboard_stats
+    try:
+        stats = get_reward_dashboard_stats(hackathon_id)
+        return success(data=stats)
+    except Exception as exc:
+        logger.exception("Failed to fetch reward stats: %s", exc)
+        return error("Internal server error.", status=500)
 
 # ═════════════════════════════════════════════════════════════════════════════
 # GLOBAL ERROR HANDLERS

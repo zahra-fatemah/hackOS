@@ -55,12 +55,12 @@ function Register() {
     formData.append("hackathon_id", id);
 
     try {
-      const res = await fetch("http://localhost:5000/api/upload-resume", {
+      const res = await fetch("http://192.168.1.67:5000/api/upload-resume", {
         method: "POST",
         body: formData,
       });
       const resData = await res.json();
-      
+
       if (resData.success) {
         setData({
           name: resData.data.full_name || "",
@@ -90,7 +90,7 @@ function Register() {
 
   const submit = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/register-participant", {
+      const res = await fetch("http://192.168.1.67:5000/api/register-participant", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -108,10 +108,10 @@ function Register() {
         }),
       });
       const resData = await res.json();
-      
+
       if (resData.success) {
         setDone(true);
-        setTimeout(() => navigate({ 
+        setTimeout(() => navigate({
           to: "/participant/qr",
           search: { participantId: resData.data.participant_id } as any
         }), 1800);
@@ -139,14 +139,12 @@ function Register() {
           return (
             <div
               key={s}
-              className={`flex flex-1 items-center gap-2 rounded-xl px-3 py-2 ${
-                active ? "bg-gradient-brand-soft ring-1 ring-white/10" : ""
-              }`}
+              className={`flex flex-1 items-center gap-2 rounded-xl px-3 py-2 ${active ? "bg-gradient-brand-soft ring-1 ring-white/10" : ""
+                }`}
             >
               <div
-                className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-[11px] font-semibold ${
-                  complete ? "bg-emerald-500/20 text-emerald-300" : active ? "bg-gradient-brand text-white" : "bg-white/5 text-muted-foreground"
-                }`}
+                className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-[11px] font-semibold ${complete ? "bg-emerald-500/20 text-emerald-300" : active ? "bg-gradient-brand text-white" : "bg-white/5 text-muted-foreground"
+                  }`}
               >
                 {complete ? <Check className="h-3 w-3" /> : i + 1}
               </div>

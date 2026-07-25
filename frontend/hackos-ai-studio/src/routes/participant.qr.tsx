@@ -24,30 +24,32 @@ function MyQr() {
   const [error, setError] = useState(false);
   const [full, setFull] = useState(false);
 
-  const participantId = new URLSearchParams(window.location.search).get("participantId");
+  const participantId = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("participantId") : null;
   const navigate = useNavigate({ from: Route.id });
 
   useEffect(() => {
     if (!participantId) {
-      navigate({ to: "/participant/registrations", replace: true });
+      if (typeof window !== "undefined") {
+        navigate({ to: "/participant/registrations", replace: true });
+      }
       return;
     }
     console.log("Fetching QR data for participantId:", participantId);
-    fetch(`http://localhost:5000/api/participant/${participantId}`)
+    fetch(`http://192.168.1.67:5000/api/participant/${participantId}`)
       .then(res => res.json())
       .then(res => {
         if (res.success) {
-           fetch(`http://localhost:5000/api/hackathon/${res.data.hackathon_id}`)
-             .then(hRes => hRes.json())
-             .then(hRes => {
-               if (hRes.success) {
-                 setData({ participant: res.data, hackathon: hRes.data });
-               } else {
-                 setError(true);
-               }
-             });
+          fetch(`http://192.168.1.67:5000/api/hackathon/${res.data.hackathon_id}`)
+            .then(hRes => hRes.json())
+            .then(hRes => {
+              if (hRes.success) {
+                setData({ participant: res.data, hackathon: hRes.data });
+              } else {
+                setError(true);
+              }
+            });
         } else {
-           setError(true);
+          setError(true);
         }
       })
       .catch(() => setError(true));
@@ -58,7 +60,7 @@ function MyQr() {
 
   const p = data.participant;
   const h = data.hackathon;
-  const qrUrl = `http://localhost:5000/${p.qr_code}`;
+  const qrUrl = `http://192.168.1.67:5000/${p.qr_code}`;
 
   return (
     <div className="space-y-8">

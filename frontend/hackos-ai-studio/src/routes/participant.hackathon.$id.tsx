@@ -28,7 +28,7 @@ function Details() {
   const [h, setH] = useState<any>(null);
 
   useEffect(() => {
-    fetch(`http://localhost:5000/api/hackathon/${id}`)
+    fetch(`http://192.168.1.67:5000/api/hackathon/${id}`)
       .then((res) => res.json())
       .then((res) => {
         if (res.success) {

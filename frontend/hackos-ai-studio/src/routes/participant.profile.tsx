@@ -28,12 +28,12 @@ function Profile() {
 
   useEffect(() => {
     if (email) {
-      fetch(`http://localhost:5000/api/profile?email=${email}&role=participant`)
+      fetch(`http://192.168.1.67:5000/api/profile?email=${email}&role=participant`)
         .then(res => res.json())
         .then(data => {
-            if (data.status === "success") {
-                setActivity(data.data);
-            }
+          if (data.status === "success") {
+            setActivity(data.data);
+          }
         })
         .catch(err => console.error("Failed to fetch activity:", err));
     }
@@ -133,9 +133,9 @@ function Field({
       <Label>{label}</Label>
       <div className="relative">
         {Icon && <Icon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground z-10" />}
-        <Input 
-          defaultValue={defaultValue} 
-          className={`bg-muted border-border focus-visible:border-brand focus-visible:ring-0 focus-visible:shadow-[0_0_0_2px_rgba(0,255,102,0.15)] transition-all duration-200 ${Icon ? "pl-10" : ""}`} 
+        <Input
+          defaultValue={defaultValue}
+          className={`bg-muted border-border focus-visible:border-brand focus-visible:ring-0 focus-visible:shadow-[0_0_0_2px_rgba(0,255,102,0.15)] transition-all duration-200 ${Icon ? "pl-10" : ""}`}
         />
       </div>
     </div>

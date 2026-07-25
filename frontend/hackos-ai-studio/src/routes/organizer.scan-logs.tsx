@@ -20,9 +20,9 @@ function ScanLogs() {
 
   useEffect(() => {
     if (!email || !hackathon?.id) return;
-    
+
     setLoading(true);
-    fetch(`http://localhost:5000/api/organizer/scan-logs?hackathon_id=${hackathon.id}&organizer_email=${email}`)
+    fetch(`http://192.168.1.67:5000/api/organizer/scan-logs?hackathon_id=${hackathon.id}&organizer_email=${email}`)
       .then(res => res.json())
       .then(json => {
         if (json.success) {

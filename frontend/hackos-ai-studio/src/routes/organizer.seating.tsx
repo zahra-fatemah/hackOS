@@ -1,213 +1,245 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AnimatePresence, motion } from "framer-motion";
-import { useMemo, useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { Search, Download, Grid3x3 } from "lucide-react";
+import { Grid3x3, Users, AlertTriangle, CheckCircle2, Download } from "lucide-react";
 import { PageHeader, GlassCard } from "@/components/hackos/section";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/store/auth";
-import { useEffect } from "react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export const Route = createFileRoute("/organizer/seating")({
   head: () => ({
-    meta: [
-      { title: "Smart Seating · HackOS AI" },
-      { name: "description", content: "AI-generated seat maps for teams with search and export." },
-      { property: "og:title", content: "Smart Seating · HackOS AI" },
-      { property: "og:description", content: "Colored interactive seat maps for teams." },
-    ],
+    meta: [{ title: "Smart Seating · HackOS AI" }],
   }),
   component: Seating,
 });
 
-const TEAM_COLORS = [
-  "oklch(0.72 0.19 295)",
-  "oklch(0.78 0.15 220)",
-  "oklch(0.75 0.22 340)",
-  "oklch(0.78 0.16 75)",
-  "oklch(0.72 0.16 155)",
-  "oklch(0.72 0.19 25)",
-  "oklch(0.72 0.19 200)",
-  "oklch(0.72 0.19 130)",
-];
+type SeatAssignment = {
+  table_number: string;
+  seat_number: string;
+  team_id: string;
+  judge_id: string;
+  participant_id: string;
+  registration_id: string;
+};
 
-type Seat = { row: number; col: number; team: string; member: string; number: number };
+type SeatingResult = {
+  hackathon_id: string;
+  generated_at: string;
+  hall_name: string;
+  rows: number;
+  columns: number;
+  tables: number;
+  total_capacity: number;
+  occupied_seats: number;
+  available_seats: number;
+  assignments?: SeatAssignment[];
+};
 
 function Seating() {
-  const [rooms, setRooms] = useState(2);
-  const [rows, setRows] = useState(6);
-  const [cols, setCols] = useState(8);
-  const [name, setName] = useState("Main Hall");
-  const [active, setActive] = useState(0);
-  const [generated, setGenerated] = useState(true);
-  const [q, setQ] = useState("");
-  
-  const email = useAuth((s) => s.email);
-  const [participants, setParticipants] = useState<any[]>([]);
+  const [hackathonId, setHackathonId] = useState<string | null>(null);
+  const [tablesCount, setTablesCount] = useState(5);
+  const [tableCapacity, setTableCapacity] = useState(8);
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<SeatingResult | null>(null);
 
   useEffect(() => {
-    if (!email) return;
-    fetch(`http://localhost:5000/api/organizer/participants?organizer_email=${email}`)
-      .then(res => res.json())
-      .then(json => {
-        if (json.success) setParticipants(json.data);
+    fetch("http://192.168.1.67:5000/api/hackathons")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && json.data.length > 0) {
+          const hid = json.data[0].id || json.data[0]._id;
+          setHackathonId(hid);
+          fetchCurrent(hid);
+        }
       })
       .catch(console.error);
-  }, [email]);
+  }, []);
 
-  const uniqueTeams = useMemo(() => {
-    const ts = new Set(participants.map(p => p.college || p.university || "Independent"));
-    return Array.from(ts);
-  }, [participants]);
-
-  const layout = useMemo<Seat[][]>(() => {
-    if (!generated || participants.length === 0) return [];
-    const all: Seat[] = [];
-    
-    // Distribute participants to seats
-    let idx = 0;
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        if (idx >= participants.length) break;
-        const p = participants[idx];
-        const team = p.college || p.university || "Independent";
-        all.push({ row: r, col: c, team: team, member: p.full_name, number: idx + 1 });
-        idx++;
-      }
-    }
-    // split by room
-    const per = Math.ceil(all.length / rooms);
-    if (per === 0) return [];
-    return Array.from({ length: rooms }).map((_, i) => all.slice(i * per, (i + 1) * per));
-  }, [rows, cols, rooms, generated, participants]);
-
-  const teamColor = (team: string) => {
-    const idx = uniqueTeams.indexOf(team);
-    return TEAM_COLORS[Math.max(0, idx) % TEAM_COLORS.length];
+  const fetchCurrent = (hid: string) => {
+    fetch(`http://192.168.1.67:5000/api/seating/${hid}`)
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && json.data) {
+          setResult(json.data);
+        }
+      })
+      .catch(console.error);
   };
+
+  const handleGenerate = async () => {
+    if (!hackathonId) {
+      toast.error("No hackathon selected");
+      return;
+    }
+
+    setLoading(true);
+    const columns = Math.ceil(Math.sqrt(tablesCount));
+    const rows = Math.ceil(tablesCount / columns);
+
+    try {
+      const res = await fetch("http://192.168.1.67:5000/api/generate-seating", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          hackathon_id: hackathonId,
+          hall_name: "Main Hall",
+          rows,
+          columns,
+          tables: tablesCount,
+          seats_per_table: tableCapacity,
+          generated_by: "Organizer"
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast.success("Seating plan generated successfully");
+        fetchCurrent(hackathonId);
+      } else {
+        toast.error(json.message || "Failed to generate seating");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Network error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Process data for UI
+  const tablesMap = new Map<string, SeatAssignment[]>();
+  if (result?.assignments) {
+    for (const a of result.assignments) {
+      if (!tablesMap.has(a.table_number)) {
+        tablesMap.set(a.table_number, []);
+      }
+      tablesMap.get(a.table_number)!.push(a);
+    }
+  }
+
+  const utilizationPct = result ? Math.round((result.occupied_seats / result.total_capacity) * 100) : 0;
+  const seatsPerTableConfig = result ? Math.floor(result.total_capacity / result.tables) : tableCapacity;
 
   return (
     <div className="space-y-8">
-      <PageHeader
-        eyebrow="Room map"
-        title="Smart seating"
-        subtitle="Auto-generate seat assignments — hover any seat to see the team."
-        actions={
-          <Button className="bg-gradient-brand text-white hover:opacity-90" onClick={() => toast.success("Layout exported")}>
-            <Download className="mr-2 h-4 w-4" /> Export layout
+      <div className="flex justify-between items-start">
+        <PageHeader
+          eyebrow="AI Optimizer"
+          title="Smart Seating"
+          subtitle="Auto-generate optimal seat assignments maximizing space utilization."
+        />
+        {result && (
+          <Button 
+            variant="outline" 
+            className="border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/10 mt-4"
+            onClick={() => window.open(`http://192.168.1.67:5000/api/export-seating/${hackathonId}`, "_blank")}
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Export to Excel
           </Button>
-        }
-      />
+        )}
+      </div>
 
-      <GlassCard className="grid gap-4 p-6 md:grid-cols-6">
-        <div className="space-y-1.5 md:col-span-2">
-          <Label>Room name</Label>
-          <Input value={name} onChange={(e) => setName(e.target.value)} />
+      <GlassCard className="grid gap-4 p-6 md:grid-cols-4 items-end">
+        <div className="space-y-1.5">
+          <Label>Number of Tables</Label>
+          <Input type="number" value={tablesCount} onChange={(e) => setTablesCount(+e.target.value || 1)} min={1} />
         </div>
-        <div className="space-y-1.5"><Label>Rooms</Label><Input type="number" value={rooms} onChange={(e) => setRooms(+e.target.value || 1)} /></div>
-        <div className="space-y-1.5"><Label>Rows</Label><Input type="number" value={rows} onChange={(e) => setRows(+e.target.value || 1)} /></div>
-        <div className="space-y-1.5"><Label>Columns</Label><Input type="number" value={cols} onChange={(e) => setCols(+e.target.value || 1)} /></div>
-        <div className="flex items-end">
+        <div className="space-y-1.5">
+          <Label>Capacity per Table</Label>
+          <Input type="number" value={tableCapacity} onChange={(e) => setTableCapacity(+e.target.value || 1)} min={1} />
+        </div>
+        <div className="md:col-span-2">
           <Button
-            onClick={() => { setGenerated(true); toast.success("Seating generated"); }}
+            onClick={handleGenerate}
+            disabled={loading || !hackathonId}
             className="w-full bg-gradient-brand text-white hover:opacity-90"
           >
-            <Grid3x3 className="mr-2 h-4 w-4" /> Generate
+            <Grid3x3 className="mr-2 h-4 w-4" />
+            {loading ? "Optimizing..." : "Generate Seating Plan"}
           </Button>
         </div>
       </GlassCard>
 
-      <div className="glass rounded-2xl p-4">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="flex gap-1">
-            {Array.from({ length: rooms }).map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setActive(i)}
-                className={`relative rounded-xl px-4 py-1.5 text-sm ${active === i ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-              >
-                {active === i && (
-                  <motion.div layoutId="room-pill" className="absolute inset-0 -z-10 rounded-xl bg-gradient-brand-soft ring-1 ring-white/10" />
-                )}
-                {name} · {i + 1}
-              </button>
-            ))}
+      {result && (
+        <div className="space-y-6">
+          <div className="flex flex-col md:flex-row gap-4">
+            <GlassCard className="flex-1 p-6 flex flex-col items-center justify-center border-emerald-500/20">
+              <div className="text-3xl font-bold text-emerald-400">{utilizationPct}%</div>
+              <div className="text-sm text-muted-foreground mt-1">Utilization Rate</div>
+            </GlassCard>
+            <GlassCard className="flex-1 p-6 flex flex-col items-center justify-center border-blue-500/20">
+              <div className="text-3xl font-bold text-blue-400">{result.occupied_seats}</div>
+              <div className="text-sm text-muted-foreground mt-1">Seated Participants</div>
+            </GlassCard>
+            <GlassCard className="flex-1 p-6 flex flex-col items-center justify-center border-amber-500/20">
+              <div className="text-3xl font-bold text-amber-400">{result.available_seats}</div>
+              <div className="text-sm text-muted-foreground mt-1">Available Seats</div>
+            </GlassCard>
           </div>
-          <div className="relative w-full max-w-xs">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search team or seat…" className="h-9 pl-10" />
-          </div>
-        </div>
 
-        <div className="mt-6 rounded-2xl border border-white/5 bg-black/20 p-6">
-          <div className="mb-4 flex justify-center">
-            <div className="rounded-full border border-white/10 bg-white/5 px-6 py-1 text-[11px] uppercase tracking-widest text-muted-foreground">
-              Stage
-            </div>
-          </div>
-          <TooltipProvider delayDuration={80}>
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={active}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.35 }}
-                className="grid gap-1.5"
-                style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
-              >
-                {(layout[active] ?? []).map((s, i) => {
-                  const highlighted =
-                    q &&
-                    (s.team.toLowerCase().includes(q.toLowerCase()) ||
-                      String(s.number).includes(q));
-                  return (
-                    <Tooltip key={i}>
-                      <TooltipTrigger asChild>
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.6 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ delay: i * 0.003 }}
-                          whileHover={{ scale: 1.15, zIndex: 10 }}
-                          className="relative aspect-square cursor-pointer rounded-md ring-1 ring-white/10"
-                          style={{
-                            background: teamColor(s.team),
-                            opacity: q ? (highlighted ? 1 : 0.15) : 0.9,
-                            boxShadow: highlighted ? "0 0 0 2px #fff" : undefined,
-                          }}
-                        >
-                          <span className="absolute inset-0 grid place-items-center text-[9px] font-semibold text-white/90">
-                            {s.number}
-                          </span>
-                        </motion.div>
-                      </TooltipTrigger>
-                      <TooltipContent className="border-white/10 bg-background">
-                        <div className="text-xs">
-                          <div className="font-medium">{s.team}</div>
-                          <div className="text-muted-foreground">{s.member} · Seat {s.number}</div>
-                          <div className="text-muted-foreground">Room {active + 1}</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {Array.from({ length: result.tables }).map((_, i) => {
+              const tId = `T${(i + 1).toString().padStart(2, '0')}`;
+              const assignments = tablesMap.get(tId) || [];
+              const remaining = seatsPerTableConfig - assignments.length;
+              
+              // Find unique teams and judges assigned here
+              const teams = Array.from(new Set(assignments.map(a => a.team_id).filter(Boolean)));
+              const judges = Array.from(new Set(assignments.map(a => a.judge_id).filter(Boolean)));
+
+              return (
+                <GlassCard key={tId} className="p-5 flex flex-col">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h3 className="font-semibold text-lg">{tId}</h3>
+                      <p className="text-xs text-muted-foreground">Capacity: {seatsPerTableConfig}</p>
+                    </div>
+                    <div className={`px-2 py-1 rounded text-xs font-medium ${remaining === 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-blue-500/20 text-blue-400'}`}>
+                      {remaining} seats free
+                    </div>
+                  </div>
+
+                  <div className="flex-1">
+                    {assignments.length === 0 ? (
+                      <div className="h-full flex flex-col items-center justify-center text-muted-foreground opacity-50 py-6">
+                        <Users className="h-8 w-8 mb-2" />
+                        <span className="text-sm">Empty Table</span>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Assigned Teams</div>
+                          {teams.length === 0 ? (
+                            <span className="text-xs text-muted-foreground">Individuals</span>
+                          ) : (
+                            teams.map(team => (
+                              <div key={team} className="flex items-center gap-2 p-2 rounded-md bg-white/5 border border-white/5">
+                                <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                                <span className="text-sm font-medium truncate">{team}</span>
+                              </div>
+                            ))
+                          )}
                         </div>
-                      </TooltipContent>
-                    </Tooltip>
-                  );
-                })}
-              </motion.div>
-            </AnimatePresence>
-          </TooltipProvider>
+                        {judges.length > 0 && (
+                          <div className="space-y-2">
+                            <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Assigned Judge</div>
+                            {judges.map(judge => (
+                              <div key={judge} className="text-xs text-indigo-400 bg-indigo-500/10 px-2 py-1 rounded w-fit">
+                                {judge}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </GlassCard>
+              );
+            })}
+          </div>
         </div>
-
-        <div className="mt-4 flex flex-wrap gap-2 text-[11px]">
-          {uniqueTeams.slice(0, 8).map((team, i) => (
-            <div key={team} className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-2.5 py-1">
-              <span className="h-2 w-2 rounded-full" style={{ background: TEAM_COLORS[i % TEAM_COLORS.length] }} />
-              {team}
-            </div>
-          ))}
-        </div>
-      </div>
+      )}
     </div>
   );
 }

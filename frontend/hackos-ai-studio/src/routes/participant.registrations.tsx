@@ -25,7 +25,7 @@ function Registrations() {
 
   useEffect(() => {
     if (!email) return;
-    fetch(`http://localhost:5000/api/profile?email=${email}&role=participant`)
+    fetch(`http://192.168.1.67:5000/api/profile?email=${email}&role=participant`)
       .then((res) => res.json())
       .then(async (res) => {
         if (res.success && res.data.registrations) {
@@ -33,7 +33,7 @@ function Registrations() {
           const enhanced = await Promise.all(
             regs.map(async (r: any) => {
               try {
-                const hRes = await fetch(`http://localhost:5000/api/hackathon/${r.hackathon_id}`);
+                const hRes = await fetch(`http://192.168.1.67:5000/api/hackathon/${r.hackathon_id}`);
                 const hJson = await hRes.json();
                 return { ...r, hackathonTitle: hJson.success ? hJson.data.title : "Unknown Hackathon" };
               } catch {

@@ -28,12 +28,12 @@ function Settings() {
 
   useEffect(() => {
     if (email) {
-      fetch(`http://localhost:5000/api/profile?email=${email}&role=organizer`)
+      fetch(`http://192.168.1.67:5000/api/profile?email=${email}&role=organizer`)
         .then(res => res.json())
         .then(data => {
-            if (data.status === "success") {
-                setActivity(data.data);
-            }
+          if (data.status === "success") {
+            setActivity(data.data);
+          }
         })
         .catch(err => console.error("Failed to fetch activity:", err));
     }

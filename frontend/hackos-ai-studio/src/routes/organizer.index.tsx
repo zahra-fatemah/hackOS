@@ -33,11 +33,11 @@ function Dashboard() {
   const [weeklyData, setWeeklyData] = useState<any[]>([]);
   const [trackData, setTrackData] = useState<any[]>([]);
   const [recentAct, setRecentAct] = useState<any[]>([]);
-  
+
   useEffect(() => {
     if (!email) return;
-    
-    fetch(`http://localhost:5000/api/organizer/dashboard-stats?organizer_email=${email}`)
+
+    fetch(`http://192.168.1.67:5000/api/organizer/dashboard-stats?organizer_email=${email}`)
       .then(res => res.json())
       .then(res => {
         if (res.success && res.data) {
@@ -71,7 +71,7 @@ function Dashboard() {
         }
       />
 
-      <motion.div 
+      <motion.div
         initial="hidden"
         animate="visible"
         variants={{
@@ -101,7 +101,7 @@ function Dashboard() {
           </div>
           <h3 className="mb-2 text-lg font-medium text-white">Your dashboard is waiting</h3>
           <p className="mb-6 max-w-sm text-sm text-muted-foreground">
-            {stats.hackathons === 0 
+            {stats.hackathons === 0
               ? "Create your first hackathon to unlock real-time analytics, participant tracking, and command center features."
               : "Share your hackathon registration link to get your first participant. Analytics will appear here automatically."}
           </p>

@@ -59,17 +59,17 @@ function Create() {
   const startAi = async (file: File) => {
     setProcessing(true);
     setMode("ai");
-    
+
     const form = new FormData();
     form.append("file", file);
-    
+
     try {
-      const res = await fetch("http://localhost:5000/api/upload-hackathon-file", {
+      const res = await fetch("http://192.168.1.67:5000/api/upload-hackathon-file", {
         method: "POST",
         body: form,
       });
       const json = await res.json();
-      
+
       if (json.success) {
         const mappedData = {
           name: json.data.title || "",
@@ -211,7 +211,7 @@ function Create() {
                           contact_email: data.contact,
                           organizer_email: email,
                         };
-                        const res = await fetch("http://localhost:5000/api/create-hackathon", {
+                        const res = await fetch("http://192.168.1.67:5000/api/create-hackathon", {
                           method: "POST",
                           headers: { "Content-Type": "application/json" },
                           body: JSON.stringify(payload),

@@ -55,6 +55,23 @@ def participants_col() -> Collection:
     return get_db()["participants"]
 
 
+def seating_assignments_col() -> Collection:
+    """Return the 'seating_assignments' collection."""
+    return get_db()["seating_assignments"]
+
+def seating_layouts_col() -> Collection:
+    """Return the 'seating_layouts' collection."""
+    return get_db()["seating_layouts"]
+
+def seat_assignments_col() -> Collection:
+    """Return the 'seat_assignments' collection."""
+    return get_db()["seat_assignments"]
+
+def rewards_col() -> Collection:
+    """Return the 'rewards' collection."""
+    return get_db()["rewards"]
+
+
 def scan_logs_col() -> Collection:
     return get_db()["scan_logs"]
 
@@ -263,6 +280,12 @@ def fetch_meal_logs_for_hackathon(hackathon_id: str) -> list[dict]:
     """Return all meal logs for a hackathon."""
     docs = meal_logs_col().find({"hackathon_id": hackathon_id}, sort=[("claimed_at", -1)])
     return [_serialize(d) for d in docs]
+
+def fetch_meal_logs_for_hackathons(hackathon_ids: list[str]) -> list[dict]:
+    """Return all meal logs for a list of hackathons."""
+    docs = meal_logs_col().find({"hackathon_id": {"$in": hackathon_ids}}, sort=[("claimed_at", -1)])
+    return [_serialize(d) for d in docs]
+
 
 def fetch_recent_meal_logs(hackathon_id: str, limit: int = 20) -> list[dict]:
     """Return the recent meal logs for a hackathon."""

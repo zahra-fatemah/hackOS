@@ -84,7 +84,7 @@ pip install -r requirements.txt
 python app.py
 ```
 
-Server starts on **http://localhost:5000**
+Server starts on **http://192.168.1.67:5000**
 
 ---
 
@@ -170,11 +170,11 @@ Liveness probe: `{ "success": true, "data": { "status": "running" } }`
 
 ## Connecting to the React Frontend
 
-The frontend runs on `http://localhost:5173` (Vite default).  
+The frontend runs on `http://192.168.1.67:5173` (Vite default).  
 CORS is pre-configured to allow requests from:
-- `http://localhost:3000`
-- `http://localhost:5173`
-- `http://localhost:4173`
+- `http://192.168.1.67:3000`
+- `http://192.168.1.67:5173`
+- `http://192.168.1.67:4173`
 
 In the frontend's `organizer.create.tsx`, replace the `startAi` mock timeout with:
 
@@ -187,7 +187,7 @@ const startAi = async (file: File) => {
   form.append("file", file);
   
   try {
-    const res = await fetch("http://localhost:5000/api/upload-hackathon-file", {
+    const res = await fetch("http://192.168.1.67:5000/api/upload-hackathon-file", {
       method: "POST",
       body: form,
     });
@@ -214,7 +214,7 @@ And the Publish button:
 
 ```ts
 const publish = async () => {
-  const res = await fetch("http://localhost:5000/api/create-hackathon", {
+  const res = await fetch("http://192.168.1.67:5000/api/create-hackathon", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),

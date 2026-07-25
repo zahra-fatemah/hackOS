@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Home, Compass, Ticket, QrCode, User, Settings } from "lucide-react";
+import { Home, Compass, Ticket, QrCode, User, Settings, Gift } from "lucide-react";
 import { PortalShell, MobileNav } from "@/components/hackos/portal-shell";
 import { useRouterState } from "@tanstack/react-router";
 
@@ -27,7 +27,7 @@ export const Route = createFileRoute("/participant")({
 
     useEffect(() => {
       if (!email) return;
-      fetch(`http://localhost:5000/api/profile?email=${email}&role=participant`)
+      fetch(`http://192.168.1.67:5000/api/profile?email=${email}&role=participant`)
         .then(res => res.json())
         .then(res => {
           if (res.success && res.data.registrations) {
@@ -57,6 +57,7 @@ export const Route = createFileRoute("/participant")({
         children: [
           { to: "/participant/registrations", label: "My Registrations", icon: Ticket },
           { to: hasZeroRegs ? "#" : qrLink, label: "My QR Pass", icon: QrCode, disabled: hasZeroRegs },
+          { to: "/participant/rewards", label: "My Rewards", icon: Gift },
         ]
       },
       {

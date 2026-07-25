@@ -27,7 +27,7 @@ export const Route = createFileRoute("/auth/participant")({
 function AuthPage() {
   const navigate = useNavigate();
   const login = useAuth((s) => s.login);
-  
+
   const [step, setStep] = useState<"email" | "otp">("email");
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
@@ -37,14 +37,14 @@ function AuthPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:5000/api/auth/request-otp", {
+      const res = await fetch("http://192.168.1.67:5000/api/auth/request-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, role: "participant" }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to send OTP");
-      
+
       toast.success("OTP sent to your email!");
       setStep("otp");
     } catch (err: any) {
@@ -58,14 +58,14 @@ function AuthPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:5000/api/auth/verify-otp", {
+      const res = await fetch("http://192.168.1.67:5000/api/auth/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, otp, role: "participant" }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Invalid OTP");
-      
+
       login("participant", email.split("@")[0], email);
       toast.success("Welcome back!");
       navigate({ to: "/participant" });
@@ -175,11 +175,11 @@ function AuthPage() {
           OR
           <div className="h-px flex-1 bg-white/10" />
         </div>
-        <Button 
-          type="button" 
-          onClick={handleGoogleSignIn} 
+        <Button
+          type="button"
+          onClick={handleGoogleSignIn}
           disabled={loading}
-          variant="outline" 
+          variant="outline"
           className="h-11 w-full rounded-xl border-white/10 bg-white/5"
         >
           <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">

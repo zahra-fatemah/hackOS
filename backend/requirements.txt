@@ -25,3 +25,4 @@ groq==0.30.0
 # Date / Utilities
 python-dateutil==2.9.0.post0
 qrcode==7.4.2
+ortools

@@ -61,13 +61,13 @@ export function ScannerModal({ open, onOpenChange, scanType, options, optionsLab
     if (state.kind !== "scanner") return;
     try {
       const qr_payload = JSON.parse(text);
-      const res = await fetch("http://localhost:5000/api/organizer/scan", {
+      const res = await fetch("http://192.168.1.67:5000/api/organizer/scan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ qr_payload, scan_type: scanType, sub_type: subType, organizer_email: email })
       });
       const json = await res.json();
-      
+
       if (res.status === 400 && json.status === "invalid_qr") {
         setState({ kind: "invalid" });
       } else if (json.success) {
@@ -222,7 +222,7 @@ function ScannerView({ subType, onScan }: { subType: string | null, onScan: (tex
 }
 
 function ResultView({ ok, invalid, name, subType, scanType, at, onDone }: { ok: boolean; invalid?: boolean; name: string; subType: string | null; scanType: string; at?: string | null; onDone: () => void }) {
-  
+
   const getActionName = () => {
     if (scanType === "entry") return "Entry";
     if (scanType === "food") return subType || "Meal";

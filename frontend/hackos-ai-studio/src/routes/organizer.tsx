@@ -1,5 +1,5 @@
 import { createFileRoute, useRouterState } from "@tanstack/react-router";
-import { Home, Sparkles, Users, BrainCircuit, Grid3x3, Utensils, Settings, LogIn, Presentation, Trophy, ClipboardList } from "lucide-react";
+import { Home, Sparkles, Users, BrainCircuit, Grid3x3, Utensils, Settings, LogIn, Presentation, Trophy, ClipboardList, Gift } from "lucide-react";
 import { PortalShell, MobileNav } from "@/components/hackos/portal-shell";
 
 const nav = [
@@ -19,7 +19,7 @@ const nav = [
       { to: "/organizer/entry", label: "Entry Check-in", icon: LogIn },
       { to: "/organizer/food", label: "Food Management", icon: Utensils },
       { to: "/organizer/workshops", label: "Workshops", icon: Presentation },
-      { to: "/organizer/prizes", label: "Prize Distribution", icon: Trophy },
+      { to: "/organizer/rewards", label: "Voucher Center", icon: Gift },
     ],
   },
   {

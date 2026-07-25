@@ -29,7 +29,7 @@ function Explore() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/hackathons")
+    fetch("http://192.168.1.67:5000/api/hackathons")
       .then((res) => res.json())
       .then((res) => {
         if (res.success) {
@@ -96,11 +96,10 @@ function Explore() {
           <button
             key={tag}
             onClick={() => setF(tag)}
-            className={`relative shrink-0 px-4 py-1.5 text-xs transition-colors duration-200 border-b-2 ${
-              f === tag 
-                ? "text-brand border-brand" 
+            className={`relative shrink-0 px-4 py-1.5 text-xs transition-colors duration-200 border-b-2 ${f === tag
+                ? "text-brand border-brand"
                 : "text-muted-foreground border-transparent hover:text-foreground"
-            }`}
+              }`}
           >
             {tag}
           </button>

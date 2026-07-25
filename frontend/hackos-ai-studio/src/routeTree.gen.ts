@@ -22,6 +22,7 @@ import { Route as OrganizerFoodRouteImport } from './routes/organizer.food'
 import { Route as OrganizerParticipantsRouteImport } from './routes/organizer.participants'
 import { Route as OrganizerPptAnalysisRouteImport } from './routes/organizer.ppt-analysis'
 import { Route as OrganizerPrizesRouteImport } from './routes/organizer.prizes'
+import { Route as OrganizerRewardsRouteImport } from './routes/organizer.rewards'
 import { Route as OrganizerScanLogsRouteImport } from './routes/organizer.scan-logs'
 import { Route as OrganizerSeatingRouteImport } from './routes/organizer.seating'
 import { Route as OrganizerSettingsRouteImport } from './routes/organizer.settings'
@@ -31,6 +32,7 @@ import { Route as ParticipantExploreRouteImport } from './routes/participant.exp
 import { Route as ParticipantProfileRouteImport } from './routes/participant.profile'
 import { Route as ParticipantQrRouteImport } from './routes/participant.qr'
 import { Route as ParticipantRegistrationsRouteImport } from './routes/participant.registrations'
+import { Route as ParticipantRewardsRouteImport } from './routes/participant.rewards'
 import { Route as ParticipantSettingsRouteImport } from './routes/participant.settings'
 import { Route as ParticipantHackathonIdRouteImport } from './routes/participant.hackathon.$id'
 import { Route as ParticipantRegisterIdRouteImport } from './routes/participant.register.$id'
@@ -100,6 +102,11 @@ const OrganizerPrizesRoute = OrganizerPrizesRouteImport.update({
   path: '/prizes',
   getParentRoute: () => OrganizerRoute,
 } as any)
+const OrganizerRewardsRoute = OrganizerRewardsRouteImport.update({
+  id: '/rewards',
+  path: '/rewards',
+  getParentRoute: () => OrganizerRoute,
+} as any)
 const OrganizerScanLogsRoute = OrganizerScanLogsRouteImport.update({
   id: '/scan-logs',
   path: '/scan-logs',
@@ -146,6 +153,11 @@ const ParticipantRegistrationsRoute =
     path: '/registrations',
     getParentRoute: () => ParticipantRoute,
   } as any)
+const ParticipantRewardsRoute = ParticipantRewardsRouteImport.update({
+  id: '/rewards',
+  path: '/rewards',
+  getParentRoute: () => ParticipantRoute,
+} as any)
 const ParticipantSettingsRoute = ParticipantSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -175,6 +187,7 @@ export interface FileRoutesByFullPath {
   '/organizer/participants': typeof OrganizerParticipantsRoute
   '/organizer/ppt-analysis': typeof OrganizerPptAnalysisRoute
   '/organizer/prizes': typeof OrganizerPrizesRoute
+  '/organizer/rewards': typeof OrganizerRewardsRoute
   '/organizer/scan-logs': typeof OrganizerScanLogsRoute
   '/organizer/seating': typeof OrganizerSeatingRoute
   '/organizer/settings': typeof OrganizerSettingsRoute
@@ -183,6 +196,7 @@ export interface FileRoutesByFullPath {
   '/participant/profile': typeof ParticipantProfileRoute
   '/participant/qr': typeof ParticipantQrRoute
   '/participant/registrations': typeof ParticipantRegistrationsRoute
+  '/participant/rewards': typeof ParticipantRewardsRoute
   '/participant/settings': typeof ParticipantSettingsRoute
   '/organizer/': typeof OrganizerIndexRoute
   '/participant/': typeof ParticipantIndexRoute
@@ -200,6 +214,7 @@ export interface FileRoutesByTo {
   '/organizer/participants': typeof OrganizerParticipantsRoute
   '/organizer/ppt-analysis': typeof OrganizerPptAnalysisRoute
   '/organizer/prizes': typeof OrganizerPrizesRoute
+  '/organizer/rewards': typeof OrganizerRewardsRoute
   '/organizer/scan-logs': typeof OrganizerScanLogsRoute
   '/organizer/seating': typeof OrganizerSeatingRoute
   '/organizer/settings': typeof OrganizerSettingsRoute
@@ -208,6 +223,7 @@ export interface FileRoutesByTo {
   '/participant/profile': typeof ParticipantProfileRoute
   '/participant/qr': typeof ParticipantQrRoute
   '/participant/registrations': typeof ParticipantRegistrationsRoute
+  '/participant/rewards': typeof ParticipantRewardsRoute
   '/participant/settings': typeof ParticipantSettingsRoute
   '/organizer': typeof OrganizerIndexRoute
   '/participant': typeof ParticipantIndexRoute
@@ -228,6 +244,7 @@ export interface FileRoutesById {
   '/organizer/participants': typeof OrganizerParticipantsRoute
   '/organizer/ppt-analysis': typeof OrganizerPptAnalysisRoute
   '/organizer/prizes': typeof OrganizerPrizesRoute
+  '/organizer/rewards': typeof OrganizerRewardsRoute
   '/organizer/scan-logs': typeof OrganizerScanLogsRoute
   '/organizer/seating': typeof OrganizerSeatingRoute
   '/organizer/settings': typeof OrganizerSettingsRoute
@@ -236,6 +253,7 @@ export interface FileRoutesById {
   '/participant/profile': typeof ParticipantProfileRoute
   '/participant/qr': typeof ParticipantQrRoute
   '/participant/registrations': typeof ParticipantRegistrationsRoute
+  '/participant/rewards': typeof ParticipantRewardsRoute
   '/participant/settings': typeof ParticipantSettingsRoute
   '/organizer/': typeof OrganizerIndexRoute
   '/participant/': typeof ParticipantIndexRoute
@@ -257,6 +275,7 @@ export interface FileRouteTypes {
     | '/organizer/participants'
     | '/organizer/ppt-analysis'
     | '/organizer/prizes'
+    | '/organizer/rewards'
     | '/organizer/scan-logs'
     | '/organizer/seating'
     | '/organizer/settings'
@@ -265,6 +284,7 @@ export interface FileRouteTypes {
     | '/participant/profile'
     | '/participant/qr'
     | '/participant/registrations'
+    | '/participant/rewards'
     | '/participant/settings'
     | '/organizer/'
     | '/participant/'
@@ -282,6 +302,7 @@ export interface FileRouteTypes {
     | '/organizer/participants'
     | '/organizer/ppt-analysis'
     | '/organizer/prizes'
+    | '/organizer/rewards'
     | '/organizer/scan-logs'
     | '/organizer/seating'
     | '/organizer/settings'
@@ -290,6 +311,7 @@ export interface FileRouteTypes {
     | '/participant/profile'
     | '/participant/qr'
     | '/participant/registrations'
+    | '/participant/rewards'
     | '/participant/settings'
     | '/organizer'
     | '/participant'
@@ -309,6 +331,7 @@ export interface FileRouteTypes {
     | '/organizer/participants'
     | '/organizer/ppt-analysis'
     | '/organizer/prizes'
+    | '/organizer/rewards'
     | '/organizer/scan-logs'
     | '/organizer/seating'
     | '/organizer/settings'
@@ -317,6 +340,7 @@ export interface FileRouteTypes {
     | '/participant/profile'
     | '/participant/qr'
     | '/participant/registrations'
+    | '/participant/rewards'
     | '/participant/settings'
     | '/organizer/'
     | '/participant/'
@@ -426,6 +450,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrganizerPrizesRouteImport
       parentRoute: typeof OrganizerRoute
     }
+    '/organizer/rewards': {
+      id: '/organizer/rewards'
+      path: '/rewards'
+      fullPath: '/organizer/rewards'
+      preLoaderRoute: typeof OrganizerRewardsRouteImport
+      parentRoute: typeof OrganizerRoute
+    }
     '/organizer/scan-logs': {
       id: '/organizer/scan-logs'
       path: '/scan-logs'
@@ -489,6 +520,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ParticipantRegistrationsRouteImport
       parentRoute: typeof ParticipantRoute
     }
+    '/participant/rewards': {
+      id: '/participant/rewards'
+      path: '/rewards'
+      fullPath: '/participant/rewards'
+      preLoaderRoute: typeof ParticipantRewardsRouteImport
+      parentRoute: typeof ParticipantRoute
+    }
     '/participant/settings': {
       id: '/participant/settings'
       path: '/settings'
@@ -520,6 +558,7 @@ interface OrganizerRouteChildren {
   OrganizerParticipantsRoute: typeof OrganizerParticipantsRoute
   OrganizerPptAnalysisRoute: typeof OrganizerPptAnalysisRoute
   OrganizerPrizesRoute: typeof OrganizerPrizesRoute
+  OrganizerRewardsRoute: typeof OrganizerRewardsRoute
   OrganizerScanLogsRoute: typeof OrganizerScanLogsRoute
   OrganizerSeatingRoute: typeof OrganizerSeatingRoute
   OrganizerSettingsRoute: typeof OrganizerSettingsRoute
@@ -534,6 +573,7 @@ const OrganizerRouteChildren: OrganizerRouteChildren = {
   OrganizerParticipantsRoute: OrganizerParticipantsRoute,
   OrganizerPptAnalysisRoute: OrganizerPptAnalysisRoute,
   OrganizerPrizesRoute: OrganizerPrizesRoute,
+  OrganizerRewardsRoute: OrganizerRewardsRoute,
   OrganizerScanLogsRoute: OrganizerScanLogsRoute,
   OrganizerSeatingRoute: OrganizerSeatingRoute,
   OrganizerSettingsRoute: OrganizerSettingsRoute,
@@ -550,6 +590,7 @@ interface ParticipantRouteChildren {
   ParticipantProfileRoute: typeof ParticipantProfileRoute
   ParticipantQrRoute: typeof ParticipantQrRoute
   ParticipantRegistrationsRoute: typeof ParticipantRegistrationsRoute
+  ParticipantRewardsRoute: typeof ParticipantRewardsRoute
   ParticipantSettingsRoute: typeof ParticipantSettingsRoute
   ParticipantIndexRoute: typeof ParticipantIndexRoute
   ParticipantHackathonIdRoute: typeof ParticipantHackathonIdRoute
@@ -561,6 +602,7 @@ const ParticipantRouteChildren: ParticipantRouteChildren = {
   ParticipantProfileRoute: ParticipantProfileRoute,
   ParticipantQrRoute: ParticipantQrRoute,
   ParticipantRegistrationsRoute: ParticipantRegistrationsRoute,
+  ParticipantRewardsRoute: ParticipantRewardsRoute,
   ParticipantSettingsRoute: ParticipantSettingsRoute,
   ParticipantIndexRoute: ParticipantIndexRoute,
   ParticipantHackathonIdRoute: ParticipantHackathonIdRoute,

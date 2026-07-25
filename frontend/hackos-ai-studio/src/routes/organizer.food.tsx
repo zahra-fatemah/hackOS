@@ -48,14 +48,14 @@ function Food() {
 
   const fetchStats = () => {
     if (!email) return;
-    fetch(`http://localhost:5000/api/organizer/food-stats?organizer_email=${email}`)
+    fetch(`http://192.168.1.67:5000/api/organizer/food-stats?organizer_email=${email}`)
       .then(res => res.json())
       .then(json => {
         if (json.success) setStats(json.data);
       })
       .catch(console.error);
-      
-    fetch(`http://localhost:5000/api/organizer/participants?organizer_email=${email}`)
+
+    fetch(`http://192.168.1.67:5000/api/organizer/participants?organizer_email=${email}`)
       .then(res => res.json())
       .then(json => {
         if (json.success) setParticipants(json.data);
@@ -101,7 +101,7 @@ function Food() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
                 <XAxis dataKey="time" stroke="#ffffff40" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis stroke="#ffffff40" fontSize={12} tickLine={false} axisLine={false} />
-                <Tooltip 
+                <Tooltip
                   contentStyle={{ backgroundColor: "#091B10", borderColor: "#0F3D24", borderRadius: "8px" }}
                   itemStyle={{ color: "#E1F5EC" }}
                 />
