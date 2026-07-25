@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import { Sparkles, Users, Utensils, FileText, ArrowUpRight } from "lucide-react";
 import { PageHeader, GlassCard } from "@/components/hackos/section";
 import { StatCard } from "@/components/hackos/stat-card";
-import { analytics, recentActivity } from "@/data/mock";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/store/auth";
@@ -31,33 +30,30 @@ function Dashboard() {
     mealsClaimed: 0,
     pptsUploaded: 0,
   });
+  const [weeklyData, setWeeklyData] = useState<any[]>([]);
+  const [trackData, setTrackData] = useState<any[]>([]);
+  const [recentAct, setRecentAct] = useState<any[]>([]);
   
   useEffect(() => {
     if (!email) return;
     
-    Promise.all([
-      fetch(`http://localhost:5000/api/hackathons?organizer_email=${email}`).then(r => r.json()),
-      fetch(`http://localhost:5000/api/organizer/participants?organizer_email=${email}`).then(r => r.json()),
-      fetch(`http://localhost:5000/api/organizer/food-stats?organizer_email=${email}`).then(r => r.json())
-    ]).then(([hRes, pRes, fRes]) => {
-      let hackCount = 0;
-      if (hRes.success) hackCount = hRes.data.length;
-      
-      let pCount = 0;
-      if (pRes.success) pCount = pRes.data.length;
-      
-      let mCount = 0;
-      if (fRes.success && fRes.data) {
-        mCount = (fRes.data.breakfast?.claimed || 0) + (fRes.data.lunch?.claimed || 0) + (fRes.data.dinner?.claimed || 0);
-      }
-      
-      setStats({
-        hackathons: hackCount,
-        participants: pCount,
-        mealsClaimed: mCount,
-        pptsUploaded: 0 // Mock for now
-      });
-    }).catch(console.error);
+    fetch(`http://localhost:5000/api/organizer/dashboard-stats?organizer_email=${email}`)
+      .then(res => res.json())
+      .then(res => {
+        if (res.success && res.data) {
+          setStats({
+            hackathons: res.data.hackathons,
+            participants: res.data.participants,
+            mealsClaimed: res.data.mealsClaimed,
+            pptsUploaded: res.data.pptsUploaded
+          });
+          // Reverse weekly data so chronological order is displayed in AreaChart
+          setWeeklyData([...res.data.weekly].reverse());
+          setTrackData(res.data.tracks);
+          setRecentAct(res.data.recentActivity);
+        }
+      })
+      .catch(console.error);
   }, [email]);
 
   return (
@@ -96,7 +92,7 @@ function Dashboard() {
           </div>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={analytics.weekly}>
+              <AreaChart data={weeklyData}>
                 <defs>
                   <linearGradient id="g1" x1="0" x2="0" y1="0" y2="1">
                     <stop offset="0%" stopColor="oklch(0.72 0.19 295)" stopOpacity={0.6} />
@@ -130,14 +126,14 @@ function Dashboard() {
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={analytics.tracks}
+                  data={trackData}
                   dataKey="value"
                   innerRadius={44}
                   outerRadius={72}
                   paddingAngle={4}
                   stroke="none"
                 >
-                  {analytics.tracks.map((_, i) => (
+                  {trackData.map((_, i) => (
                     <Cell key={i} fill={COLORS[i % COLORS.length]} />
                   ))}
                 </Pie>
@@ -145,7 +141,7 @@ function Dashboard() {
             </ResponsiveContainer>
           </div>
           <div className="mt-3 space-y-2 text-xs">
-            {analytics.tracks.map((t, i) => (
+            {trackData.map((t: any, i: number) => (
               <div key={t.name} className="flex items-center justify-between">
                 <span className="flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full" style={{ background: COLORS[i] }} />
@@ -166,7 +162,7 @@ function Dashboard() {
           </Button>
         </div>
         <div className="space-y-2">
-          {recentActivity.map((a, i) => (
+          {recentAct.map((a: any, i: number) => (
             <motion.div
               key={a.id}
               initial={{ opacity: 0, x: 8 }}

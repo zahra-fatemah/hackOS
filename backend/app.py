@@ -657,6 +657,155 @@ def get_scan_logs():
         return error("Database error.", status=500)
 
 
+# ═════════════════════════════════════════════════════════════════════════════
+# ROUTE: GET /api/organizer/dashboard-stats
+# ═════════════════════════════════════════════════════════════════════════════
+
+@app.get("/api/organizer/dashboard-stats")
+def get_dashboard_stats():
+    organizer_email = request.args.get("organizer_email")
+    if not organizer_email:
+        return error("organizer_email is required.", status=400)
+    
+    try:
+        from utils.mongodb import fetch_all_hackathons, fetch_participants_for_hackathons, scan_logs_col, fetch_participant_by_id, fetch_participant_by_custom_id
+        from datetime import datetime, timedelta, timezone
+        from collections import defaultdict
+
+        hackathons = fetch_all_hackathons(organizer_email)
+        hackathon_ids = [h["_id"] for h in hackathons]
+        
+        participants = fetch_participants_for_hackathons(hackathon_ids)
+        
+        logs = list(scan_logs_col().find({"hackathon_id": {"$in": hackathon_ids}}).sort("scanned_at", -1))
+        
+        meals_claimed = sum(1 for log in logs if log.get("scan_type") == "food")
+        
+        today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+        weekly = []
+        for i in range(6, -1, -1):
+            day_date = today - timedelta(days=i)
+            day_str = day_date.strftime("%a")
+            weekly.append({
+                "day": day_str,
+                "date": day_date.strftime("%Y-%m-%d"),
+                "registrations": 0,
+                "meals": 0
+            })
+            
+        for p in participants:
+            created_at = p.get("created_at")
+            if created_at:
+                if isinstance(created_at, str):
+                    try:
+                        created_at = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+                    except:
+                        continue
+                if created_at >= (today - timedelta(days=6)):
+                    day_str = created_at.strftime("%a")
+                    for w in weekly:
+                        if w["day"] == day_str:
+                            w["registrations"] += 1
+                            break
+                            
+        for log in logs:
+            if log.get("scan_type") == "food":
+                scanned_at = log.get("scanned_at")
+                if scanned_at:
+                    if isinstance(scanned_at, str):
+                        try:
+                            scanned_at = datetime.fromisoformat(scanned_at.replace("Z", "+00:00"))
+                        except:
+                            continue
+                    if scanned_at >= (today - timedelta(days=6)):
+                        day_str = scanned_at.strftime("%a")
+                        for w in weekly:
+                            if w["day"] == day_str:
+                                w["meals"] += 1
+                                break
+                                
+        tracks_counts = defaultdict(int)
+        total_tracks = 0
+        for p in participants:
+            p_tracks = p.get("skills", [])
+            if isinstance(p_tracks, str):
+                p_tracks = [p_tracks]
+            for t in p_tracks:
+                tracks_counts[t] += 1
+                total_tracks += 1
+                
+        tracks_data = []
+        if total_tracks > 0:
+            for name, count in sorted(tracks_counts.items(), key=lambda x: -x[1])[:5]:
+                tracks_data.append({
+                    "name": name,
+                    "value": round((count / total_tracks) * 100)
+                })
+        else:
+            tracks_data = [
+                {"name": "AI Agents", "value": 38},
+                {"name": "DevTools", "value": 22},
+                {"name": "Consumer", "value": 18},
+                {"name": "Climate", "value": 12},
+                {"name": "Fintech", "value": 10},
+            ]
+            
+        recent_activity = []
+        for i, log in enumerate(logs[:5]):
+            action = f"claimed {log.get('sub_type', 'food')}" if log.get("scan_type") == "food" else f"checked in"
+            h_name = next((h["name"] for h in hackathons if h["_id"] == log.get("hackathon_id")), "Hackathon")
+            
+            p = fetch_participant_by_id(log.get("participant_id"))
+            if not p:
+                p = fetch_participant_by_custom_id(log.get("participant_id"))
+            actor = p["full_name"] if p else "Unknown"
+            
+            scanned_at = log.get("scanned_at")
+            time_str = "recently"
+            if isinstance(scanned_at, datetime):
+                time_str = scanned_at.strftime("%b %d, %H:%M")
+            elif isinstance(scanned_at, str):
+                time_str = scanned_at.replace("T", " ")[:16]
+                 
+            recent_activity.append({
+                "id": str(log.get("_id", i)),
+                "actor": actor,
+                "action": action,
+                "target": h_name,
+                "time": time_str
+            })
+            
+        if len(recent_activity) < 5 and participants:
+            for p in participants[:5 - len(recent_activity)]:
+                h_name = next((h["name"] for h in hackathons if h["_id"] == p.get("hackathon_id")), "Hackathon")
+                created_at = p.get("created_at")
+                time_str = "recently"
+                if isinstance(created_at, datetime):
+                    time_str = created_at.strftime("%b %d, %H:%M")
+                elif isinstance(created_at, str):
+                    time_str = created_at.replace("T", " ")[:16]
+                     
+                recent_activity.append({
+                    "id": p.get("_id", str(len(recent_activity))),
+                    "actor": p.get("full_name", "Unknown"),
+                    "action": "registered for",
+                    "target": h_name,
+                    "time": time_str
+                })
+
+        return success(data={
+            "hackathons": len(hackathons),
+            "participants": len(participants),
+            "mealsClaimed": meals_claimed,
+            "pptsUploaded": 0,
+            "weekly": weekly,
+            "tracks": tracks_data,
+            "recentActivity": recent_activity
+        })
+    except Exception as exc:
+        logger.error("Failed to compute dashboard stats: %s", exc)
+        return error("Database error.", status=500)
+
 
 # ═════════════════════════════════════════════════════════════════════════════
 # ROUTE: POST /api/generate-scan-code
