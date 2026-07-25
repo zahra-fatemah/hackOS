@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Coffee, Utensils, Moon, ScanLine, Check, X } from "lucide-react";
 import { PageHeader } from "@/components/hackos/section";
-import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { useAuth } from "@/store/auth";
@@ -88,7 +87,7 @@ function Food() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <GlassCard className="lg:col-span-2 p-6">
+        <div className="glass rounded-xl p-6 lg:col-span-2">
           <div className="text-sm font-medium">Claims throughout the day</div>
           <div className="mt-4 h-64">
             <ResponsiveContainer width="100%" height="100%">
@@ -99,40 +98,44 @@ function Food() {
                     <stop offset="100%" stopColor="oklch(0.75 0.22 340)" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid stroke="oklch(1 0 0 / 0.05)" vertical={false} />
-                <XAxis dataKey="time" stroke="oklch(0.7 0 0)" tickLine={false} axisLine={false} fontSize={11} />
-                <YAxis stroke="oklch(0.7 0 0)" tickLine={false} axisLine={false} fontSize={11} />
-                <Tooltip contentStyle={{ background: "oklch(0.20 0.018 265)", border: "1px solid oklch(1 0 0 / 0.1)", borderRadius: 12 }} />
-                {/* Timeline data is mock, as tracking over day requires chronological generation which we don't do for this quick test */}
-                <Area type="monotone" dataKey="claimed" stroke="oklch(0.75 0.22 340)" strokeWidth={2} fill="url(#fg)" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
+                <XAxis dataKey="time" stroke="#ffffff40" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="#ffffff40" fontSize={12} tickLine={false} axisLine={false} />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: "#091B10", borderColor: "#0F3D24", borderRadius: "8px" }}
+                  itemStyle={{ color: "#E1F5EC" }}
+                />
+                <Area type="monotone" dataKey="claimed" stroke="oklch(0.75 0.22 340)" strokeWidth={2} fillOpacity={1} fill="url(#fg)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
-        </GlassCard>
+        </div>
 
-        <GlassCard className="p-6">
+        <div className="glass rounded-xl p-6">
           <div className="text-sm font-medium">Recent scans</div>
-          <div className="mt-3 space-y-2">
-            {stats.recent.map((r, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, x: 6 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.05 }}
-                className="glass flex items-center gap-3 rounded-xl p-3"
-              >
-                <div className={`grid h-8 w-8 place-items-center rounded-full ${r.status === "ok" ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-300"}`}>
-                  {r.status === "ok" ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
+          <div className="mt-4 space-y-4">
+            {stats.recent.length === 0 ? (
+              <div className="text-sm text-muted-foreground text-center py-8">No recent activity</div>
+            ) : (
+              stats.recent.map((scan: any, i: number) => (
+                <div key={i} className="flex items-center justify-between border-b border-border/40 pb-3 last:border-0 last:pb-0">
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-full bg-brand/10 flex items-center justify-center text-brand">
+                      <Utensils className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium">Ticket #{scan.ticketId?.substring(0, 8)}</div>
+                      <div className="text-xs text-muted-foreground capitalize">{scan.mealType}</div>
+                    </div>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {new Date(scan.scannedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </div>
                 </div>
-                <div className="min-w-0 flex-1 text-sm">
-                  <div className="font-medium">{r.name}</div>
-                  <div className="text-xs text-muted-foreground">{r.meal} · {r.time}</div>
-                </div>
-                {r.status === "duplicate" && <span className="text-[10px] text-red-300">DUPLICATE</span>}
-              </motion.div>
-            ))}
+              ))
+            )}
           </div>
-        </GlassCard>
+        </div>
       </div>
 
       <ScannerModal

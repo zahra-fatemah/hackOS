@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AmbientBackground, MouseGlow } from "./background";
-import { CustomCursor } from "./custom-cursor";
 import { Logo } from "./logo";
 import { useAuth } from "@/store/auth";
 import { cn } from "@/lib/utils";
@@ -49,7 +48,7 @@ export function PortalShell({
     const initialState: Record<string, boolean> = {};
     nav.forEach(item => {
       if (item.children) {
-        const isActive = item.children.some(child => 
+        const isActive = item.children.some(child =>
           child.to && (pathname === child.to || (child.to !== `/${base}` && pathname.startsWith(child.to)))
         );
         initialState[item.label] = isActive;
@@ -89,7 +88,6 @@ export function PortalShell({
   return (
     <div className="relative flex min-h-screen">
       <AmbientBackground />
-      <CustomCursor />
       <MouseGlow />
 
       {/* Sidebar */}
@@ -119,7 +117,7 @@ export function PortalShell({
           <div className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
             {!collapsed && (base === "participant" ? "Participant" : "Organizer")}
           </div>
-          <motion.nav 
+          <motion.nav
             className="space-y-4"
             key={pathname + "-nav"}
             initial={{ opacity: 0, y: 12 }}
@@ -132,7 +130,7 @@ export function PortalShell({
                 return (
                   <div key={item.label} className="space-y-1">
                     {!collapsed && (
-                      <button 
+                      <button
                         onClick={() => toggleGroup(item.label)}
                         className="flex w-full items-center justify-between px-2 py-1 text-left font-mono text-[0.68rem] uppercase tracking-[0.15em] text-[#E1F5EC]/35 hover:text-white/60 transition-colors"
                       >
@@ -181,7 +179,7 @@ export function PortalShell({
                   </div>
                 );
               }
-              
+
               const active = item.to && (pathname === item.to || (item.to !== `/${base}` && pathname.startsWith(item.to)));
               const Icon = item.icon!;
               return (
@@ -222,7 +220,7 @@ export function PortalShell({
 
         <div className="mt-auto p-3">
           {!collapsed && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 2.1, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
@@ -301,16 +299,27 @@ export function PortalShell({
 
 export function MobileNav({ nav, base }: { nav: NavItem[]; base: string }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  // Flatten tree to get actual leaf nodes for mobile nav
+  const flatNav = nav.reduce((acc, item) => {
+    if (item.children) {
+      acc.push(...item.children);
+    } else {
+      acc.push(item);
+    }
+    return acc;
+  }, [] as NavItem[]);
+
   return (
     <div className="fixed inset-x-0 bottom-3 z-40 mx-3 md:hidden">
       <div className="glass-strong flex items-center justify-around rounded-2xl px-2 py-1.5">
-        {nav.slice(0, 5).map((item) => {
-          const Icon = item.icon;
-          const active = pathname === item.to || (item.to !== `/${base}` && pathname.startsWith(item.to));
+        {flatNav.slice(0, 5).map((item) => {
+          const Icon = item.icon!;
+          const active = item.to && (pathname === item.to || (item.to !== `/${base}` && pathname.startsWith(item.to)));
           return (
             <Link
               key={item.label}
-              to={item.disabled ? "#" : item.to}
+              to={item.disabled ? "#" : item.to!}
               className={cn(
                 "flex flex-col items-center gap-0.5 rounded-xl px-3 py-1.5 text-[10px]",
                 active ? "text-foreground" : "text-muted-foreground",
