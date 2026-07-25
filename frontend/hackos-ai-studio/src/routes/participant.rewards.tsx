@@ -43,39 +43,36 @@ function ParticipantRewards() {
   const [revealing, setRevealing] = useState<string | null>(null);
 
   useEffect(() => {
-    // We need the participant ID for this email. 
-    // We can fetch profile and get the first registration id, or we fetch profile to get participant ID.
     if (!email) return;
     fetch(`http://192.168.1.67:5000/api/profile?email=${email}&role=participant`)
       .then(res => res.json())
-      .then(json => {
-        if (json.success && json.data.participant_id) {
-          const pid = json.data.participant_id;
-          setParticipantId(pid);
-          fetchRewards(pid);
+      .then(async json => {
+        if (json.success && json.data.registrations && json.data.registrations.length > 0) {
+          const pids = json.data.registrations.map((r: any) => r.participant_id);
+          const allRewardsPromises = pids.map((pid: string) => 
+            fetch(`http://192.168.1.67:5000/api/rewards/participant/${pid}`)
+              .then(res => res.json())
+              .then(j => j.success ? j.data : [])
+              .catch(() => [])
+          );
+          const allRewardsArrays = await Promise.all(allRewardsPromises);
+          setRewards(allRewardsArrays.flat());
         }
       })
       .catch(console.error);
   }, [email]);
 
-  const fetchRewards = (pid: string) => {
-    fetch(`http://192.168.1.67:5000/api/rewards/participant/${pid}`)
-      .then((res) => res.json())
-      .then((json) => {
-        if (json.success) setRewards(json.data);
-      })
-      .catch(console.error);
-  };
 
-  const handleReveal = async (rewardId: string) => {
-    if (!participantId) return;
+
+  const handleReveal = async (rewardId: string, pId: string) => {
+    if (!pId) return;
     setRevealing(rewardId);
     try {
       const res = await fetch("http://192.168.1.67:5000/api/rewards/reveal", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          participant_id: participantId,
+          participant_id: pId,
           reward_id: rewardId
         }),
       });
@@ -150,7 +147,7 @@ function ParticipantRewards() {
                       <Button 
                         variant="secondary" 
                         size="sm" 
-                        onClick={() => handleReveal(r._id)}
+                        onClick={() => handleReveal(r._id, r.participant_id)}
                         disabled={revealing === r._id}
                         className="font-medium"
                       >
