@@ -2,13 +2,25 @@ import { createFileRoute } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { Coffee, Utensils, Moon, ScanLine, Check, X, ShieldAlert, KeyRound } from "lucide-react";
-import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
-import { PageHeader, GlassCard } from "@/components/hackos/section";
+import { Coffee, Utensils, Moon, ScanLine, Check, X } from "lucide-react";
+import { PageHeader } from "@/components/hackos/section";
+import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { useAuth } from "@/store/auth";
+import { ScannerModal } from "@/components/hackos/scanner-modal";
+
+// Mock timeline data since our endpoints just return arrays of recent
+const foodStats = {
+  timeline: [
+    { time: "08:00", claimed: 10 },
+    { time: "10:00", claimed: 45 },
+    { time: "12:00", claimed: 120 },
+    { time: "14:00", claimed: 80 },
+    { time: "18:00", claimed: 150 },
+    { time: "20:00", claimed: 90 },
+  ]
+};
 
 export const Route = createFileRoute("/organizer/food")({
   head: () => ({
@@ -22,22 +34,12 @@ export const Route = createFileRoute("/organizer/food")({
   component: Food,
 });
 
-type ScanState =
-  | { kind: "closed" }
-  | { kind: "gate" }
-  | { kind: "meal_selector" }
-  | { kind: "scanner"; meal: string }
-  | { kind: "success"; name: string; meal: string }
-  | { kind: "duplicate"; name: string; meal: string }
-  | { kind: "invalid" };
+
 
 function Food() {
   const email = useAuth((s) => s.email);
   const scanCode = useAuth((s) => s.scanCode);
-  const [state, setState] = useState<ScanState>({ kind: "closed" });
-  const [code, setCode] = useState("");
-  const [err, setErr] = useState(false);
-  const [participants, setParticipants] = useState<any[]>([]);
+  const [scannerOpen, setScannerOpen] = useState(false);
   const [stats, setStats] = useState({
     breakfast: { claimed: 0, total: 0 },
     lunch: { claimed: 0, total: 0 },
@@ -66,45 +68,6 @@ function Food() {
     fetchStats();
   }, [email]);
 
-  const openGate = () => { setState({ kind: "gate" }); setCode(""); setErr(false); };
-
-  const verify = () => {
-    if (code.trim().toUpperCase() === scanCode.toUpperCase()) {
-      setState({ kind: "meal_selector" });
-    } else {
-      setErr(true);
-      toast.error("Access denied", { description: "The scan code is incorrect." });
-    }
-  };
-
-  const handleScan = async (text: string, meal: string) => {
-    if (state.kind !== "scanner") return;
-    try {
-      const qr_payload = JSON.parse(text);
-      const res = await fetch("http://localhost:5000/api/organizer/scan-food", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ qr_payload, meal })
-      });
-      const json = await res.json();
-      
-      if (res.status === 400 && json.status === "invalid_qr") {
-        setState({ kind: "invalid" });
-      } else if (json.success) {
-        setState({ kind: "success", name: json.data.name, meal: json.data.meal });
-      } else if (res.status === 409) {
-        setState({ kind: "duplicate", name: json.errors[0].name, meal: json.errors[0].meal });
-      } else {
-        toast.error(json.message || "An error occurred");
-        setState({ kind: "closed" });
-      }
-      fetchStats();
-    } catch (e) {
-      console.error(e);
-      setState({ kind: "invalid" });
-    }
-  };
-
   return (
     <div className="space-y-8">
       <PageHeader
@@ -112,7 +75,7 @@ function Food() {
         title="Food management"
         subtitle="QR-protected meal claims with duplicate detection."
         actions={
-          <Button onClick={openGate} className="bg-gradient-brand text-white hover:opacity-90">
+          <Button onClick={() => setScannerOpen(true)} className="bg-gradient-brand text-white hover:opacity-90">
             <ScanLine className="mr-2 h-4 w-4" /> Open scanner
           </Button>
         }
@@ -172,91 +135,15 @@ function Food() {
         </GlassCard>
       </div>
 
-      <Dialog open={state.kind !== "closed"} onOpenChange={(o) => !o && setState({ kind: "closed" })}>
-        <DialogContent className="max-w-lg rounded-3xl border-white/10 bg-background/95 p-0 backdrop-blur-xl">
-          <AnimatePresence mode="wait">
-            {state.kind === "gate" && (
-              <motion.div key="gate" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="p-8">
-                <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-gradient-brand">
-                  <KeyRound className="h-6 w-6 text-white" />
-                </div>
-                <div className="text-center text-lg font-semibold">Organizer scan code</div>
-                <p className="mt-1 text-center text-sm text-muted-foreground">
-                  Enter your event's scan code to unlock the QR scanner.
-                </p>
-                <div className="mt-6 space-y-2">
-                  <Input
-                    value={code}
-                    onChange={(e) => { setCode(e.target.value); setErr(false); }}
-                    placeholder="e.g. HACKOS-2026"
-                    className={`h-12 text-center font-mono tracking-widest ${err ? "border-red-500/60" : ""}`}
-                  />
-                  {err && (
-                    <div className="flex items-center justify-center gap-2 text-xs text-red-300">
-                      <ShieldAlert className="h-3.5 w-3.5" /> Access denied — wrong code.
-                    </div>
-                  )}
-                  <div className="text-center text-[11px] text-muted-foreground">
-                    Hint (dev): <span className="font-mono">{scanCode}</span>
-                  </div>
-                </div>
-                <Button onClick={verify} className="mt-6 h-11 w-full rounded-xl bg-gradient-brand text-white hover:opacity-90">
-                  Verify & open scanner
-                </Button>
-              </motion.div>
-            )}
-
-            {state.kind === "meal_selector" && (
-              <motion.div key="meal_selector" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="p-8">
-                <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-gradient-brand">
-                  <Utensils className="h-6 w-6 text-white" />
-                </div>
-                <div className="text-center text-lg font-semibold">Select Meal Type</div>
-                <p className="mt-1 text-center text-sm text-muted-foreground">
-                  Which meal are you scanning for?
-                </p>
-                <div className="mt-6 flex flex-col gap-3">
-                  {["Breakfast", "Lunch", "Dinner"].map(m => (
-                    <Button key={m} onClick={() => setState({ kind: "scanner", meal: m })} variant="outline" className="h-14 justify-start px-6 text-lg border-white/10 bg-white/5 hover:bg-white/10 hover:text-white">
-                      {m}
-                    </Button>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-
-            {state.kind === "scanner" && (
-              <ScannerView meal={state.meal} onScan={(text) => handleScan(text, state.meal)} />
-            )}
-
-            {state.kind === "success" && (
-              <ResultView
-                ok
-                name={state.name}
-                meal={state.meal}
-                onDone={() => setState({ kind: "closed" })}
-              />
-            )}
-            {state.kind === "duplicate" && (
-              <ResultView
-                ok={false}
-                name={state.name}
-                meal={state.meal}
-                onDone={() => setState({ kind: "closed" })}
-              />
-            )}
-            {state.kind === "invalid" && (
-              <ResultView
-                ok={false}
-                invalid
-                name="Unknown"
-                meal=""
-                onDone={() => setState({ kind: "closed" })}
-              />
-            )}
-          </AnimatePresence>
-        </DialogContent>
-      </Dialog>
+      <ScannerModal
+        open={scannerOpen}
+        onOpenChange={setScannerOpen}
+        scanType="food"
+        options={["Breakfast", "Lunch", "Dinner"]}
+        optionsLabel="Select Meal Type"
+        icon={Utensils}
+        onSuccess={fetchStats}
+      />
     </div>
   );
 }
@@ -307,84 +194,4 @@ function MealCard({
   );
 }
 
-import { Scanner } from '@yudiel/react-qr-scanner';
 
-function ScannerView({ meal, onScan }: { meal: string, onScan: (text: string) => void }) {
-  return (
-    <motion.div key="scan" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-8">
-      <div className="text-center text-sm text-muted-foreground">Scanning for {meal}</div>
-      <div className="relative mx-auto mt-4 aspect-square w-full max-w-sm overflow-hidden rounded-2xl border border-white/10 bg-black">
-        <Scanner
-          onScan={(result) => {
-            if (result && result.length > 0) {
-              onScan(result[0].rawValue);
-            }
-          }}
-          components={{
-            audio: false,
-            onOff: false,
-            torch: false,
-            zoom: false,
-            finder: false
-          }}
-          styles={{ container: { width: "100%", height: "100%" } }}
-        />
-        <div className="absolute inset-8 rounded-xl border-2 border-white/40 pointer-events-none" />
-        {/* corners */}
-        {["top-6 left-6", "top-6 right-6", "bottom-6 left-6", "bottom-6 right-6"].map((p, i) => (
-          <div key={i} className={`absolute ${p} h-6 w-6 border-brand pointer-events-none`} style={{
-            borderTopWidth: i < 2 ? 3 : 0,
-            borderBottomWidth: i >= 2 ? 3 : 0,
-            borderLeftWidth: i % 2 === 0 ? 3 : 0,
-            borderRightWidth: i % 2 === 1 ? 3 : 0,
-          }} />
-        ))}
-        <motion.div
-          className="absolute left-8 right-8 h-1 rounded-full bg-gradient-brand pointer-events-none"
-          style={{ boxShadow: "0 0 24px oklch(0.72 0.19 295 / 0.8)" }}
-          animate={{ top: ["12%", "88%", "12%"] }}
-          transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
-        />
-      </div>
-      <div className="mt-4 text-center text-xs text-muted-foreground animate-pulse">Scanning…</div>
-    </motion.div>
-  );
-}
-
-function ResultView({ ok, invalid, name, meal, onDone }: { ok: boolean; invalid?: boolean; name: string; meal: string; onDone: () => void }) {
-  useEffect(() => {
-    if (invalid) toast.error("Invalid or unrecognized QR code");
-    else if (ok) toast.success(`${meal} claimed for ${name}`);
-    else toast.error(`Duplicate scan — ${meal} already claimed`);
-  }, [ok, invalid, name, meal]);
-  return (
-    <motion.div
-      key="res"
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0 }}
-      className={`p-10 text-center`}
-    >
-      <motion.div
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{ type: "spring", stiffness: 200, damping: 12 }}
-        className={`mx-auto grid h-24 w-24 place-items-center rounded-full ${ok && !invalid ? "bg-emerald-500/20" : "bg-red-500/20"}`}
-      >
-        {ok && !invalid ? <Check className="h-12 w-12 text-emerald-300" /> : <X className="h-12 w-12 text-red-300" />}
-      </motion.div>
-      <div className="mt-6 text-2xl font-semibold">
-        {invalid ? "Invalid QR Code" : ok ? "Meal successfully claimed" : "Meal already claimed"}
-      </div>
-      <div className="mt-1 text-sm text-muted-foreground">
-        {invalid ? "This QR code is not valid for this event." : `${name} · ${meal}`}
-      </div>
-      <Button
-        onClick={onDone}
-        className={`mt-6 h-11 rounded-xl px-8 ${ok && !invalid ? "bg-emerald-500/20 text-emerald-100 hover:bg-emerald-500/30" : "bg-red-500/20 text-red-100 hover:bg-red-500/30"}`}
-      >
-        Done
-      </Button>
-    </motion.div>
-  );
-}

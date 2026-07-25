@@ -17,14 +17,14 @@ export function PageHeader({
     <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
       <div>
         {eyebrow && (
-          <div className="mb-2 inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+          <div className="mb-2 inline-flex items-center rounded-full border border-border bg-accent px-3 py-1 text-[0.68rem] font-mono tracking-[0.2em] uppercase text-brand">
             {eyebrow}
           </div>
         )}
         <motion.h1
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-3xl font-semibold tracking-tight md:text-[34px]"
+          className="text-3xl font-bold tracking-[-0.03em] text-foreground md:text-[34px]"
         >
           {title}
         </motion.h1>

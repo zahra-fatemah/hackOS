@@ -83,7 +83,7 @@ function Explore() {
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search hackathons, tracks, sponsors…"
-            className="h-11 pl-10"
+            className="h-11 pl-10 bg-card border-border focus-visible:border-brand focus-visible:ring-0 focus-visible:shadow-[0_0_0_2px_rgba(0,255,102,0.1)] transition-all duration-200"
           />
         </div>
         <Button variant="outline" className="h-11 rounded-xl border-white/10 bg-white/5">
@@ -96,16 +96,12 @@ function Explore() {
           <button
             key={tag}
             onClick={() => setF(tag)}
-            className={`relative shrink-0 rounded-full px-4 py-1.5 text-xs transition ${
-              f === tag ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+            className={`relative shrink-0 px-4 py-1.5 text-xs transition-colors duration-200 border-b-2 ${
+              f === tag 
+                ? "text-brand border-brand" 
+                : "text-muted-foreground border-transparent hover:text-foreground"
             }`}
           >
-            {f === tag && (
-              <motion.div
-                layoutId="filter-pill"
-                className="absolute inset-0 -z-10 rounded-full bg-gradient-brand-soft ring-1 ring-white/10"
-              />
-            )}
             {tag}
           </button>
         ))}

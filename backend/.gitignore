@@ -1,0 +1,50 @@
+# ── Python ───────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+.eggs/
+*.whl
+MANIFEST
+
+# ── Virtual Environments ─────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+.env.local
+.env.*.local
+
+# ── Secrets / Config ─────────────────────────────────────────
+.env
+*.env
+secrets.json
+
+# ── Uploads (runtime directory) ──────────────────────────────
+uploads/*
+!uploads/.gitkeep
+
+# ── IDE / OS ─────────────────────────────────────────────────
+.vscode/
+.idea/
+*.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# ── Logs ─────────────────────────────────────────────────────
+*.log
+logs/
+
+# ── Testing ──────────────────────────────────────────────────
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml

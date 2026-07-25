@@ -44,19 +44,23 @@ function Profile() {
       <PageHeader eyebrow="Account" title="Profile" subtitle="Update your public hackathon profile." />
 
       <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
-        <GlassCard className="p-6 text-center">
-          <div className="mx-auto grid h-24 w-24 place-items-center rounded-full bg-gradient-brand text-2xl font-semibold text-white ring-brand">
-            {participantProfile.avatar}
+        <div className="p-6 text-center bg-card border border-border rounded-2xl">
+          <div className="mx-auto relative grid h-24 w-24 place-items-center rounded-full">
+            <div className="absolute inset-[-2px] rounded-full animate-[spin-slow_2s_linear_infinite]" style={{ background: 'conic-gradient(#00FF66, #0F3D24, #00FF66)' }} />
+            <div className="absolute inset-1 rounded-full bg-card" />
+            <div className="relative z-10 text-2xl font-semibold text-foreground">
+              {participantProfile.avatar}
+            </div>
           </div>
           <div className="mt-4 text-lg font-semibold">{participantProfile.name}</div>
           <div className="text-sm text-muted-foreground">{email || participantProfile.email}</div>
           <div className="mt-2 text-xs text-muted-foreground">{participantProfile.department} · {participantProfile.year}</div>
-          <Button variant="outline" className="mt-4 w-full border-white/10 bg-white/5">Change photo</Button>
-        </GlassCard>
+          <Button variant="outline" className="mt-4 w-full border-border bg-accent text-brand hover:bg-accent/80 hover:text-brand">Change photo</Button>
+        </div>
 
         <div className="space-y-6">
           {activity && (
-            <GlassCard className="p-6">
+            <div className="p-6 bg-card border border-border rounded-2xl">
               <div className="flex items-center gap-2 mb-4 text-sm font-medium">
                 <Activity className="h-4 w-4 text-brand" /> Live Activity Stats
               </div>
@@ -70,10 +74,10 @@ function Profile() {
                   <div className="text-xs text-muted-foreground mt-1">Meals Claimed</div>
                 </div>
               </div>
-            </GlassCard>
+            </div>
           )}
 
-          <GlassCard className="p-6">
+          <div className="p-6 bg-card border border-border rounded-2xl">
             <div className="grid gap-4 md:grid-cols-2">
               <Field label="Name" defaultValue={participantProfile.name} />
               <Field label="Email" defaultValue={email || participantProfile.email} />
@@ -103,12 +107,12 @@ function Profile() {
               </div>
             </div>
             <div className="mt-6 flex justify-end gap-2">
-              <Button variant="outline" className="border-white/10 bg-white/5">Cancel</Button>
-              <Button onClick={() => toast.success("Profile saved")} className="bg-gradient-brand text-white hover:opacity-90">
+              <Button variant="outline" className="border-border bg-accent text-brand hover:bg-accent/80 hover:text-brand">Cancel</Button>
+              <Button onClick={() => toast.success("Profile saved")} className="bg-gradient-brand text-foreground hover:opacity-90 hover:animate-[glow-pulse_2s_infinite]">
                 Save changes
               </Button>
             </div>
-          </GlassCard>
+          </div>
         </div>
       </div>
     </div>
@@ -128,8 +132,11 @@ function Field({
     <div className="space-y-1.5">
       <Label>{label}</Label>
       <div className="relative">
-        {Icon && <Icon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />}
-        <Input defaultValue={defaultValue} className={Icon ? "pl-10" : ""} />
+        {Icon && <Icon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground z-10" />}
+        <Input 
+          defaultValue={defaultValue} 
+          className={`bg-muted border-border focus-visible:border-brand focus-visible:ring-0 focus-visible:shadow-[0_0_0_2px_rgba(0,255,102,0.15)] transition-all duration-200 ${Icon ? "pl-10" : ""}`} 
+        />
       </div>
     </div>
   );

@@ -17,11 +17,15 @@ import { Route as AuthOrganizerRouteImport } from './routes/auth.organizer'
 import { Route as AuthParticipantRouteImport } from './routes/auth.participant'
 import { Route as OrganizerIndexRouteImport } from './routes/organizer.index'
 import { Route as OrganizerCreateRouteImport } from './routes/organizer.create'
+import { Route as OrganizerEntryRouteImport } from './routes/organizer.entry'
 import { Route as OrganizerFoodRouteImport } from './routes/organizer.food'
 import { Route as OrganizerParticipantsRouteImport } from './routes/organizer.participants'
 import { Route as OrganizerPptAnalysisRouteImport } from './routes/organizer.ppt-analysis'
+import { Route as OrganizerPrizesRouteImport } from './routes/organizer.prizes'
+import { Route as OrganizerScanLogsRouteImport } from './routes/organizer.scan-logs'
 import { Route as OrganizerSeatingRouteImport } from './routes/organizer.seating'
 import { Route as OrganizerSettingsRouteImport } from './routes/organizer.settings'
+import { Route as OrganizerWorkshopsRouteImport } from './routes/organizer.workshops'
 import { Route as ParticipantIndexRouteImport } from './routes/participant.index'
 import { Route as ParticipantExploreRouteImport } from './routes/participant.explore'
 import { Route as ParticipantProfileRouteImport } from './routes/participant.profile'
@@ -71,6 +75,11 @@ const OrganizerCreateRoute = OrganizerCreateRouteImport.update({
   path: '/create',
   getParentRoute: () => OrganizerRoute,
 } as any)
+const OrganizerEntryRoute = OrganizerEntryRouteImport.update({
+  id: '/entry',
+  path: '/entry',
+  getParentRoute: () => OrganizerRoute,
+} as any)
 const OrganizerFoodRoute = OrganizerFoodRouteImport.update({
   id: '/food',
   path: '/food',
@@ -86,6 +95,16 @@ const OrganizerPptAnalysisRoute = OrganizerPptAnalysisRouteImport.update({
   path: '/ppt-analysis',
   getParentRoute: () => OrganizerRoute,
 } as any)
+const OrganizerPrizesRoute = OrganizerPrizesRouteImport.update({
+  id: '/prizes',
+  path: '/prizes',
+  getParentRoute: () => OrganizerRoute,
+} as any)
+const OrganizerScanLogsRoute = OrganizerScanLogsRouteImport.update({
+  id: '/scan-logs',
+  path: '/scan-logs',
+  getParentRoute: () => OrganizerRoute,
+} as any)
 const OrganizerSeatingRoute = OrganizerSeatingRouteImport.update({
   id: '/seating',
   path: '/seating',
@@ -94,6 +113,11 @@ const OrganizerSeatingRoute = OrganizerSeatingRouteImport.update({
 const OrganizerSettingsRoute = OrganizerSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => OrganizerRoute,
+} as any)
+const OrganizerWorkshopsRoute = OrganizerWorkshopsRouteImport.update({
+  id: '/workshops',
+  path: '/workshops',
   getParentRoute: () => OrganizerRoute,
 } as any)
 const ParticipantIndexRoute = ParticipantIndexRouteImport.update({
@@ -146,11 +170,15 @@ export interface FileRoutesByFullPath {
   '/auth/organizer': typeof AuthOrganizerRoute
   '/auth/participant': typeof AuthParticipantRoute
   '/organizer/create': typeof OrganizerCreateRoute
+  '/organizer/entry': typeof OrganizerEntryRoute
   '/organizer/food': typeof OrganizerFoodRoute
   '/organizer/participants': typeof OrganizerParticipantsRoute
   '/organizer/ppt-analysis': typeof OrganizerPptAnalysisRoute
+  '/organizer/prizes': typeof OrganizerPrizesRoute
+  '/organizer/scan-logs': typeof OrganizerScanLogsRoute
   '/organizer/seating': typeof OrganizerSeatingRoute
   '/organizer/settings': typeof OrganizerSettingsRoute
+  '/organizer/workshops': typeof OrganizerWorkshopsRoute
   '/participant/explore': typeof ParticipantExploreRoute
   '/participant/profile': typeof ParticipantProfileRoute
   '/participant/qr': typeof ParticipantQrRoute
@@ -167,11 +195,15 @@ export interface FileRoutesByTo {
   '/auth/organizer': typeof AuthOrganizerRoute
   '/auth/participant': typeof AuthParticipantRoute
   '/organizer/create': typeof OrganizerCreateRoute
+  '/organizer/entry': typeof OrganizerEntryRoute
   '/organizer/food': typeof OrganizerFoodRoute
   '/organizer/participants': typeof OrganizerParticipantsRoute
   '/organizer/ppt-analysis': typeof OrganizerPptAnalysisRoute
+  '/organizer/prizes': typeof OrganizerPrizesRoute
+  '/organizer/scan-logs': typeof OrganizerScanLogsRoute
   '/organizer/seating': typeof OrganizerSeatingRoute
   '/organizer/settings': typeof OrganizerSettingsRoute
+  '/organizer/workshops': typeof OrganizerWorkshopsRoute
   '/participant/explore': typeof ParticipantExploreRoute
   '/participant/profile': typeof ParticipantProfileRoute
   '/participant/qr': typeof ParticipantQrRoute
@@ -191,11 +223,15 @@ export interface FileRoutesById {
   '/auth/organizer': typeof AuthOrganizerRoute
   '/auth/participant': typeof AuthParticipantRoute
   '/organizer/create': typeof OrganizerCreateRoute
+  '/organizer/entry': typeof OrganizerEntryRoute
   '/organizer/food': typeof OrganizerFoodRoute
   '/organizer/participants': typeof OrganizerParticipantsRoute
   '/organizer/ppt-analysis': typeof OrganizerPptAnalysisRoute
+  '/organizer/prizes': typeof OrganizerPrizesRoute
+  '/organizer/scan-logs': typeof OrganizerScanLogsRoute
   '/organizer/seating': typeof OrganizerSeatingRoute
   '/organizer/settings': typeof OrganizerSettingsRoute
+  '/organizer/workshops': typeof OrganizerWorkshopsRoute
   '/participant/explore': typeof ParticipantExploreRoute
   '/participant/profile': typeof ParticipantProfileRoute
   '/participant/qr': typeof ParticipantQrRoute
@@ -216,11 +252,15 @@ export interface FileRouteTypes {
     | '/auth/organizer'
     | '/auth/participant'
     | '/organizer/create'
+    | '/organizer/entry'
     | '/organizer/food'
     | '/organizer/participants'
     | '/organizer/ppt-analysis'
+    | '/organizer/prizes'
+    | '/organizer/scan-logs'
     | '/organizer/seating'
     | '/organizer/settings'
+    | '/organizer/workshops'
     | '/participant/explore'
     | '/participant/profile'
     | '/participant/qr'
@@ -237,11 +277,15 @@ export interface FileRouteTypes {
     | '/auth/organizer'
     | '/auth/participant'
     | '/organizer/create'
+    | '/organizer/entry'
     | '/organizer/food'
     | '/organizer/participants'
     | '/organizer/ppt-analysis'
+    | '/organizer/prizes'
+    | '/organizer/scan-logs'
     | '/organizer/seating'
     | '/organizer/settings'
+    | '/organizer/workshops'
     | '/participant/explore'
     | '/participant/profile'
     | '/participant/qr'
@@ -260,11 +304,15 @@ export interface FileRouteTypes {
     | '/auth/organizer'
     | '/auth/participant'
     | '/organizer/create'
+    | '/organizer/entry'
     | '/organizer/food'
     | '/organizer/participants'
     | '/organizer/ppt-analysis'
+    | '/organizer/prizes'
+    | '/organizer/scan-logs'
     | '/organizer/seating'
     | '/organizer/settings'
+    | '/organizer/workshops'
     | '/participant/explore'
     | '/participant/profile'
     | '/participant/qr'
@@ -343,6 +391,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrganizerCreateRouteImport
       parentRoute: typeof OrganizerRoute
     }
+    '/organizer/entry': {
+      id: '/organizer/entry'
+      path: '/entry'
+      fullPath: '/organizer/entry'
+      preLoaderRoute: typeof OrganizerEntryRouteImport
+      parentRoute: typeof OrganizerRoute
+    }
     '/organizer/food': {
       id: '/organizer/food'
       path: '/food'
@@ -364,6 +419,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrganizerPptAnalysisRouteImport
       parentRoute: typeof OrganizerRoute
     }
+    '/organizer/prizes': {
+      id: '/organizer/prizes'
+      path: '/prizes'
+      fullPath: '/organizer/prizes'
+      preLoaderRoute: typeof OrganizerPrizesRouteImport
+      parentRoute: typeof OrganizerRoute
+    }
+    '/organizer/scan-logs': {
+      id: '/organizer/scan-logs'
+      path: '/scan-logs'
+      fullPath: '/organizer/scan-logs'
+      preLoaderRoute: typeof OrganizerScanLogsRouteImport
+      parentRoute: typeof OrganizerRoute
+    }
     '/organizer/seating': {
       id: '/organizer/seating'
       path: '/seating'
@@ -376,6 +445,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/organizer/settings'
       preLoaderRoute: typeof OrganizerSettingsRouteImport
+      parentRoute: typeof OrganizerRoute
+    }
+    '/organizer/workshops': {
+      id: '/organizer/workshops'
+      path: '/workshops'
+      fullPath: '/organizer/workshops'
+      preLoaderRoute: typeof OrganizerWorkshopsRouteImport
       parentRoute: typeof OrganizerRoute
     }
     '/participant/': {
@@ -439,21 +515,29 @@ declare module '@tanstack/react-router' {
 
 interface OrganizerRouteChildren {
   OrganizerCreateRoute: typeof OrganizerCreateRoute
+  OrganizerEntryRoute: typeof OrganizerEntryRoute
   OrganizerFoodRoute: typeof OrganizerFoodRoute
   OrganizerParticipantsRoute: typeof OrganizerParticipantsRoute
   OrganizerPptAnalysisRoute: typeof OrganizerPptAnalysisRoute
+  OrganizerPrizesRoute: typeof OrganizerPrizesRoute
+  OrganizerScanLogsRoute: typeof OrganizerScanLogsRoute
   OrganizerSeatingRoute: typeof OrganizerSeatingRoute
   OrganizerSettingsRoute: typeof OrganizerSettingsRoute
+  OrganizerWorkshopsRoute: typeof OrganizerWorkshopsRoute
   OrganizerIndexRoute: typeof OrganizerIndexRoute
 }
 
 const OrganizerRouteChildren: OrganizerRouteChildren = {
   OrganizerCreateRoute: OrganizerCreateRoute,
+  OrganizerEntryRoute: OrganizerEntryRoute,
   OrganizerFoodRoute: OrganizerFoodRoute,
   OrganizerParticipantsRoute: OrganizerParticipantsRoute,
   OrganizerPptAnalysisRoute: OrganizerPptAnalysisRoute,
+  OrganizerPrizesRoute: OrganizerPrizesRoute,
+  OrganizerScanLogsRoute: OrganizerScanLogsRoute,
   OrganizerSeatingRoute: OrganizerSeatingRoute,
   OrganizerSettingsRoute: OrganizerSettingsRoute,
+  OrganizerWorkshopsRoute: OrganizerWorkshopsRoute,
   OrganizerIndexRoute: OrganizerIndexRoute,
 }
 

@@ -23,6 +23,7 @@ export type NavItem = {
   label: string;
   icon: LucideIcon;
   badge?: string;
+  disabled?: boolean;
 };
 
 export function PortalShell({
@@ -39,6 +40,20 @@ export function PortalShell({
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
   const { name, logout } = useAuth();
+  const loginTime = useAuth((s) => s.loginTime);
+
+  // Enforce 1-hour session limit
+  useEffect(() => {
+    const checkSession = () => {
+      if (loginTime && Date.now() - loginTime > 3600000) {
+        logout();
+        navigate({ to: "/" });
+      }
+    };
+    checkSession();
+    const interval = setInterval(checkSession, 60000); // Check every minute
+    return () => clearInterval(interval);
+  }, [loginTime, logout, navigate]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -63,7 +78,12 @@ export function PortalShell({
         className="sticky top-0 hidden h-screen shrink-0 flex-col border-r border-white/5 bg-sidebar/60 backdrop-blur-xl md:flex"
       >
         <div className="flex h-16 items-center justify-between px-4">
-          {!collapsed ? <Logo /> : (
+          {!collapsed ? (
+            <div className="flex items-center">
+              <div className="mr-2 h-1.5 w-1.5 rounded-full bg-brand animate-[pulse-dot_1.5s_ease-in-out_infinite]" />
+              <Logo />
+            </div>
+          ) : (
             <div className="mx-auto h-8 w-8 rounded-lg bg-gradient-brand" />
           )}
           <button
@@ -85,22 +105,17 @@ export function PortalShell({
               const Icon = item.icon;
               return (
                 <Link
-                  key={item.to}
-                  to={item.to}
+                  key={item.label}
+                  to={item.disabled ? "#" : item.to}
                   className={cn(
-                    "group relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition",
+                    "group relative flex items-center gap-3 rounded-r-xl px-3 py-2 text-sm transition-colors duration-200 border-l-2",
                     active
-                      ? "bg-white/5 text-foreground"
-                      : "text-muted-foreground hover:bg-white/5 hover:text-foreground",
+                      ? "bg-accent text-foreground border-brand"
+                      : "text-muted-foreground hover:bg-white/5 hover:text-brand border-transparent",
+                    item.disabled && "opacity-50 pointer-events-none"
                   )}
                 >
-                  {active && (
-                    <motion.div
-                      layoutId={`nav-${base}`}
-                      className="absolute inset-0 -z-10 rounded-xl bg-gradient-brand-soft ring-1 ring-white/10"
-                      transition={{ type: "spring", stiffness: 400, damping: 32 }}
-                    />
-                  )}
+                  {/* Removed absolute layoutId since we just use bg-accent for active state now per instructions */}
                   <Icon className="h-4 w-4 shrink-0" />
                   <AnimatePresence initial={false}>
                     {!collapsed && (
@@ -127,7 +142,7 @@ export function PortalShell({
 
         <div className="mt-auto p-3">
           {!collapsed && (
-            <div className="glass mb-3 rounded-2xl p-3">
+            <div className="mb-3 rounded-2xl p-3 bg-card border border-border">
               <div className="mb-2 flex items-center gap-2 text-xs">
                 <Sparkles className="h-3.5 w-3.5 text-brand" />
                 <span>AI Assistant</span>
@@ -135,7 +150,7 @@ export function PortalShell({
               <p className="text-[11px] leading-snug text-muted-foreground">
                 Ask HackOS anything — from PPT insights to seat maps.
               </p>
-              <Button size="sm" className="mt-3 w-full bg-gradient-brand text-white hover:opacity-90">
+              <Button size="sm" className="mt-3 w-full bg-gradient-brand text-foreground hover:opacity-90 animate-[glow-pulse_2s_infinite]">
                 Open assistant
               </Button>
             </div>
@@ -209,11 +224,12 @@ export function MobileNav({ nav, base }: { nav: NavItem[]; base: string }) {
           const active = pathname === item.to || (item.to !== `/${base}` && pathname.startsWith(item.to));
           return (
             <Link
-              key={item.to}
-              to={item.to}
+              key={item.label}
+              to={item.disabled ? "#" : item.to}
               className={cn(
                 "flex flex-col items-center gap-0.5 rounded-xl px-3 py-1.5 text-[10px]",
                 active ? "text-foreground" : "text-muted-foreground",
+                item.disabled && "opacity-50 pointer-events-none"
               )}
             >
               <Icon className="h-4 w-4" />

@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { Download, Maximize2, Share2 } from "lucide-react";
@@ -25,13 +25,14 @@ function MyQr() {
   const [full, setFull] = useState(false);
 
   const participantId = new URLSearchParams(window.location.search).get("participantId");
+  const navigate = useNavigate({ from: Route.id });
 
   useEffect(() => {
     if (!participantId) {
-      setError(true);
+      navigate({ to: "/participant/registrations", replace: true });
       return;
     }
-    
+    console.log("Fetching QR data for participantId:", participantId);
     fetch(`http://localhost:5000/api/participant/${participantId}`)
       .then(res => res.json())
       .then(res => {

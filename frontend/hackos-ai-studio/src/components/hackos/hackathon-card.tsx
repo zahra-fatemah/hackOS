@@ -7,23 +7,23 @@ import { Badge } from "@/components/ui/badge";
 export function HackathonCard({ h, index = 0 }: { h: Hackathon; index?: number }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 14 }}
+      initial={{ opacity: 0, y: 16 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-40px" }}
-      transition={{ duration: 0.5, delay: index * 0.05 }}
-      whileHover={{ y: -4 }}
-      className="group glass relative overflow-hidden rounded-2xl"
+      transition={{ duration: 0.25, delay: index * 0.08, ease: "easeOut" }}
+      className="group bg-card relative overflow-hidden rounded-2xl border border-border transition-all duration-250 ease-out hover:-translate-y-1 hover:shadow-[0_8px_32px_rgba(0,255,102,0.08)]"
     >
+      <div className="absolute inset-x-0 top-0 h-[2px] origin-left scale-x-0 bg-brand transition-transform duration-300 ease-out group-hover:scale-x-100 z-10" />
       <div className="relative h-32 overflow-hidden" style={{ background: h.banner }}>
         <div className="absolute inset-0 opacity-30 mix-blend-overlay hackos-grid" />
-        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-card/90 to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-card to-transparent" />
         <div className="absolute right-3 top-3 flex gap-1.5">
           {h.trending && (
-            <Badge className="border-white/20 bg-white/15 text-white backdrop-blur">
+            <Badge className="border border-border bg-accent text-brand font-mono text-[0.65rem] tracking-[0.15em] uppercase px-2 py-0.5 backdrop-blur-none">
               Trending
             </Badge>
           )}
-          <Badge variant="secondary" className="bg-black/40 text-white backdrop-blur">
+          <Badge className="border border-border bg-accent text-brand font-mono text-[0.65rem] tracking-[0.15em] uppercase px-2 py-0.5 backdrop-blur-none hover:bg-accent">
             {h.mode}
           </Badge>
         </div>
@@ -46,7 +46,7 @@ export function HackathonCard({ h, index = 0 }: { h: Hackathon; index?: number }
           {h.tracks.slice(0, 3).map((t) => (
             <span
               key={t}
-              className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] text-muted-foreground"
+              className="rounded-full border border-border bg-transparent px-2 py-0.5 font-mono text-[11px] text-[rgba(225,245,236,0.6)]"
             >
               {t}
             </span>
@@ -55,7 +55,7 @@ export function HackathonCard({ h, index = 0 }: { h: Hackathon; index?: number }
         <Link
           to="/participant/hackathon/$id"
           params={{ id: h.id }}
-          className="mt-2 inline-flex w-full items-center justify-center rounded-xl bg-white/5 px-4 py-2 text-sm font-medium transition group-hover:bg-gradient-brand group-hover:text-white"
+          className="mt-2 inline-flex w-full items-center justify-center rounded-xl bg-white/5 px-4 py-2 text-sm font-medium transition-all group-hover:bg-gradient-brand group-hover:text-foreground group-hover:shadow-[0_0_16px_rgba(139,92,246,0.4)]"
         >
           View details →
         </Link>

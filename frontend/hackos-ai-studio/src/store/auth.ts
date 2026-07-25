@@ -8,6 +8,7 @@ type AuthState = {
   name: string;
   email: string;
   scanCode: string;
+  loginTime: number | null;
   login: (role: Exclude<Role, null>, name: string, email: string) => void;
   logout: () => void;
 };
@@ -19,8 +20,9 @@ export const useAuth = create<AuthState>()(
       name: "",
       email: "",
       scanCode: "HACKOS-2026",
-      login: (role, name, email) => set({ role, name, email }),
-      logout: () => set({ role: null, name: "", email: "" }),
+      loginTime: null,
+      login: (role, name, email) => set({ role, name, email, loginTime: Date.now() }),
+      logout: () => set({ role: null, name: "", email: "", loginTime: null }),
     }),
     { name: "hackos-auth" },
   ),
