@@ -249,6 +249,9 @@ def create_hackathon():
         return error(
             "Request body must be JSON with Content-Type: application/json."
         )
+    
+    if "organizer_email" in payload and payload["organizer_email"]:
+        payload["organizer_email"] = payload["organizer_email"].lower().strip()
 
     # ── Validate ──────────────────────────────────────────────────────────────
     is_valid, validation_errors = validate_hackathon_payload(payload)
@@ -282,6 +285,8 @@ def create_hackathon():
 def list_hackathons():
     """Return all hackathons sorted newest-first."""
     organizer_email = request.args.get("organizer_email")
+    if organizer_email:
+        organizer_email = organizer_email.lower().strip()
     try:
         hackathons = fetch_all_hackathons(organizer_email)
     except Exception as exc:
@@ -673,6 +678,7 @@ def get_dashboard_stats():
     organizer_email = request.args.get("organizer_email")
     if not organizer_email:
         return error("organizer_email is required.", status=400)
+    organizer_email = organizer_email.lower().strip()
     
     try:
         from utils.mongodb import fetch_all_hackathons, fetch_participants_for_hackathons, scan_logs_col, fetch_participant_by_id, fetch_participant_by_custom_id
