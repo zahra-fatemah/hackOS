@@ -714,7 +714,9 @@ def get_dashboard_stats():
                         created_at = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
                     except:
                         continue
-                if created_at >= (today - timedelta(days=6)):
+                if isinstance(created_at, datetime) and created_at.tzinfo is None:
+                    created_at = created_at.replace(tzinfo=timezone.utc)
+                if isinstance(created_at, datetime) and created_at >= (today - timedelta(days=6)):
                     day_str = created_at.strftime("%a")
                     for w in weekly:
                         if w["day"] == day_str:
@@ -730,7 +732,9 @@ def get_dashboard_stats():
                             scanned_at = datetime.fromisoformat(scanned_at.replace("Z", "+00:00"))
                         except:
                             continue
-                    if scanned_at >= (today - timedelta(days=6)):
+                    if isinstance(scanned_at, datetime) and scanned_at.tzinfo is None:
+                        scanned_at = scanned_at.replace(tzinfo=timezone.utc)
+                    if isinstance(scanned_at, datetime) and scanned_at >= (today - timedelta(days=6)):
                         day_str = scanned_at.strftime("%a")
                         for w in weekly:
                             if w["day"] == day_str:
@@ -766,7 +770,7 @@ def get_dashboard_stats():
         recent_activity = []
         for i, log in enumerate(logs[:5]):
             action = f"claimed {log.get('sub_type', 'food')}" if log.get("scan_type") == "food" else f"checked in"
-            h_name = next((h["name"] for h in hackathons if h["_id"] == log.get("hackathon_id")), "Hackathon")
+            h_name = next((h.get("title", "Hackathon") for h in hackathons if h["id"] == log.get("hackathon_id")), "Hackathon")
             
             p = fetch_participant_by_id(log.get("participant_id"))
             if not p:
@@ -790,7 +794,7 @@ def get_dashboard_stats():
             
         if len(recent_activity) < 5 and participants:
             for p in participants[:5 - len(recent_activity)]:
-                h_name = next((h["name"] for h in hackathons if h["_id"] == p.get("hackathon_id")), "Hackathon")
+                h_name = next((h.get("title", "Hackathon") for h in hackathons if h["id"] == p.get("hackathon_id")), "Hackathon")
                 created_at = p.get("created_at")
                 time_str = "recently"
                 if isinstance(created_at, datetime):
@@ -816,6 +820,8 @@ def get_dashboard_stats():
             "recentActivity": recent_activity
         })
     except Exception as exc:
+        import traceback
+        traceback.print_exc()
         logger.error("Failed to compute dashboard stats: %s", exc)
         return error("Database error.", status=500)
 
