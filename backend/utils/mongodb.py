@@ -100,6 +100,11 @@ def users_col() -> Collection:
     return get_db()["users"]
 
 
+def copilot_sessions_col() -> Collection:
+    """Return the 'copilot_sessions' collection."""
+    return get_db()["copilot_sessions"]
+
+
 # ── CRUD helpers ──────────────────────────────────────────────────────────────
 
 def insert_hackathon(doc: dict) -> str:

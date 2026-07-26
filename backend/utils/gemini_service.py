@@ -138,6 +138,54 @@ def _call_groq(user_message: str, system_prompt: str = _SYSTEM_PROMPT) -> str:
     return completion.choices[0].message.content.strip()
 
 
+# ── Chat Copilot ───────────────────────────────────────────────────────────────
+
+def chat_with_copilot(history: list[dict], user_message: str) -> str:
+    """
+    history: list of dicts like [{"role": "user", "parts": ["hello"]}, {"role": "model", "parts": ["hi"]}]
+    """
+    from google import genai
+    from google.genai import types
+
+    client = genai.Client(api_key=GEMINI_API_KEY)
+
+    contents = []
+    for msg in history:
+        contents.append(
+            types.Content(
+                role=msg["role"],
+                parts=[types.Part.from_text(text=msg.get("parts", [""])[0])]
+            )
+        )
+    
+    # Add new user message
+    contents.append(
+        types.Content(
+            role="user",
+            parts=[types.Part.from_text(text=user_message)]
+        )
+    )
+
+    system_instruction = (
+        "You are the HackOS AI Copilot. You assist users with the HackOS platform. "
+        "HackOS is an AI-native operating system for hackathons. "
+        "When participants ask questions, you help them with schedule, rules, and registration. "
+        "When organizers ask questions, you help them with event management, analytics, and logistics. "
+        "Keep your answers concise, helpful, and directly addressing their needs."
+    )
+
+    response = client.models.generate_content(
+        model=GEMINI_MODEL,
+        contents=contents,
+        config=types.GenerateContentConfig(
+            system_instruction=system_instruction,
+            temperature=0.7,
+        )
+    )
+
+    return response.text.strip()
+
+
 # ── JSON parser / sanitiser ───────────────────────────────────────────────────
 
 def _parse_json(raw: str) -> dict[str, Any]:

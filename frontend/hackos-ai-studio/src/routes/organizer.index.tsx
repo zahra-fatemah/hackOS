@@ -71,28 +71,7 @@ function Dashboard() {
         }
       />
 
-      <motion.div
-        initial="hidden"
-        animate="visible"
-        variants={{
-          hidden: { opacity: 0 },
-          visible: { opacity: 1, transition: { delayChildren: 1.7, staggerChildren: 0.08 } }
-        }}
-        className="grid grid-cols-2 gap-3 md:grid-cols-4"
-      >
-        <motion.div variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}>
-          <StatCard icon={Sparkles} label="Hackathons" value={stats.hackathons} delta="Active" />
-        </motion.div>
-        <motion.div variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}>
-          <StatCard icon={Users} label="Participants" value={stats.participants} delta="Total" accent="brand-2" />
-        </motion.div>
-        <motion.div variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}>
-          <StatCard icon={Utensils} label="Meals claimed" value={stats.mealsClaimed} delta="Live" accent="brand-3" />
-        </motion.div>
-        <motion.div variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}>
-          <StatCard icon={FileText} label="PPTs uploaded" value={stats.pptsUploaded} delta="AI-graded" />
-        </motion.div>
-      </motion.div>
+
 
       {stats.hackathons === 0 || stats.participants === 0 ? (
         <GlassCard className="flex flex-col items-center justify-center p-12 text-center border-dashed bg-white/5">

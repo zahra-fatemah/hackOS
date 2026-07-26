@@ -7,16 +7,36 @@ import {
   LogOut,
   Search,
   Sparkles,
+  Moon,
+  Sun,
   type LucideIcon,
 } from "lucide-react";
-import { useEffect, useState } from "react";
-import { AmbientBackground, MouseGlow } from "./background";
+import { useEffect, useState, useRef } from "react";
+import { MouseGlow, AmbientBackground } from "./background";
 import { Logo } from "./logo";
 import { useAuth } from "@/store/auth";
+import { useTheme } from "@/store/theme";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { CommandPalette } from "./command-palette";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 export type NavItem = {
   to?: string;
@@ -40,7 +60,63 @@ export function PortalShell({
   const [cmdOpen, setCmdOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
-  const { name, logout } = useAuth();
+  const { name, email, education, organization, bio, age, profession, profilePicture, updateProfile, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Chat State
+  const [chatOpen, setChatOpen] = useState(false);
+  const [messages, setMessages] = useState<{ role: string; parts: string[] }[]>([]);
+  const [chatInput, setChatInput] = useState("");
+  const [isChatLoading, setIsChatLoading] = useState(false);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (chatOpen && chatScrollRef.current) {
+      chatScrollRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, chatOpen, isChatLoading]);
+
+  const handleChatSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!chatInput.trim() || isChatLoading) return;
+    
+    const userMsg = chatInput.trim();
+    setChatInput("");
+    setMessages(prev => [...prev, { role: "user", parts: [userMsg] }]);
+    setIsChatLoading(true);
+    
+    try {
+      // Assuming backend runs on :5000
+      const res = await fetch("http://192.168.1.67:5000/api/copilot/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, message: userMsg }),
+      });
+      const data = await res.json();
+      if (data.success && data.data) {
+        setMessages(data.data.history);
+      } else {
+        setMessages(prev => [...prev, { role: "model", parts: ["Sorry, I encountered an error. Please try again."] }]);
+      }
+    } catch (err) {
+      console.error("Chat error:", err);
+      setMessages(prev => [...prev, { role: "model", parts: ["Network error. Is the backend running?"] }]);
+    } finally {
+      setIsChatLoading(false);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        updateProfile({ profilePicture: reader.result as string });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
   const loginTime = useAuth((s) => s.loginTime);
 
   // Initialize expanded groups based on active route
@@ -132,7 +208,7 @@ export function PortalShell({
                     {!collapsed && (
                       <button
                         onClick={() => toggleGroup(item.label)}
-                        className="flex w-full items-center justify-between px-2 py-1 text-left font-mono text-[0.68rem] uppercase tracking-[0.15em] text-[#E1F5EC]/35 hover:text-white/60 transition-colors"
+                        className="flex w-full items-center justify-between px-2 py-1 text-left font-mono text-[0.68rem] uppercase tracking-[0.15em] text-muted-foreground/60 hover:text-foreground transition-colors"
                       >
                         {item.label}
                         <ChevronsRight className={cn("h-3 w-3 transition-transform duration-150 ease-out", isOpen && "rotate-90")} />
@@ -158,8 +234,8 @@ export function PortalShell({
                                   "group relative flex items-center gap-3 rounded-r-xl py-2 text-sm transition-colors duration-150 border-l-2",
                                   collapsed ? "px-3" : "pl-7 pr-3",
                                   active
-                                    ? "bg-[rgba(0,255,102,0.08)] text-[#00FF66] border-[#00FF66]"
-                                    : "text-muted-foreground hover:bg-white/5 hover:text-[#E1F5EC] border-transparent",
+                                    ? "bg-brand/10 text-brand border-brand"
+                                    : "text-muted-foreground hover:bg-accent hover:text-foreground border-transparent",
                                   child.disabled && "opacity-50 pointer-events-none"
                                 )}
                               >
@@ -189,8 +265,8 @@ export function PortalShell({
                   className={cn(
                     "group relative flex items-center gap-3 rounded-r-xl px-3 py-2 text-sm transition-colors duration-150 border-l-2",
                     active
-                      ? "bg-[rgba(0,255,102,0.08)] text-[#00FF66] border-[#00FF66]"
-                      : "text-muted-foreground hover:bg-white/5 hover:text-[#E1F5EC] border-transparent",
+                      ? "bg-brand/10 text-brand border-brand"
+                      : "text-muted-foreground hover:bg-accent hover:text-foreground border-transparent",
                     item.disabled && "opacity-50 pointer-events-none"
                   )}
                 >
@@ -233,9 +309,65 @@ export function PortalShell({
               <p className="text-[11px] leading-snug text-muted-foreground">
                 Ask HackOS anything — from PPT insights to seat maps.
               </p>
-              <Button size="sm" className="mt-3 w-full bg-gradient-brand text-foreground hover:opacity-90 animate-[btn-breathe_3s_ease-in-out_infinite]">
-                Open assistant
-              </Button>
+              <Sheet open={chatOpen} onOpenChange={setChatOpen}>
+                <SheetTrigger asChild>
+                  <Button size="sm" className="mt-3 w-full bg-gradient-brand text-foreground hover:opacity-90 animate-[btn-breathe_3s_ease-in-out_infinite]">
+                    Open assistant
+                  </Button>
+                </SheetTrigger>
+                <SheetContent className="flex flex-col sm:max-w-md w-full border-l border-border bg-background">
+                  <SheetHeader className="shrink-0 border-b border-border pb-4">
+                    <SheetTitle className="flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-brand" />
+                      HackOS Copilot
+                    </SheetTitle>
+                    <SheetDescription>
+                      Ask anything about schedules, analytics, or event rules.
+                    </SheetDescription>
+                  </SheetHeader>
+                  
+                  <div className="flex-1 overflow-y-auto py-4 space-y-4 pr-2 custom-scrollbar">
+                    {messages.length === 0 && (
+                      <div className="text-center text-sm text-muted-foreground mt-10">
+                        Send a message to start chatting with HackOS AI.
+                      </div>
+                    )}
+                    {messages.map((m, i) => (
+                      <div key={i} className={cn("flex flex-col gap-1 text-sm max-w-[85%]", m.role === "user" ? "ml-auto items-end" : "mr-auto items-start")}>
+                        <div className={cn("rounded-2xl px-3 py-2", m.role === "user" ? "bg-brand text-primary-foreground" : "bg-muted text-foreground")}>
+                          {m.parts[0]}
+                        </div>
+                      </div>
+                    ))}
+                    {isChatLoading && (
+                      <div className="mr-auto items-start max-w-[85%]">
+                        <div className="rounded-2xl px-3 py-2 bg-muted text-muted-foreground text-sm flex items-center gap-2">
+                          <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground animate-bounce" />
+                          <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground animate-bounce [animation-delay:0.2s]" />
+                          <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground animate-bounce [animation-delay:0.4s]" />
+                        </div>
+                      </div>
+                    )}
+                    <div ref={chatScrollRef} />
+                  </div>
+                  
+                  <form 
+                    className="mt-auto shrink-0 border-t border-border pt-4 flex gap-2"
+                    onSubmit={handleChatSubmit}
+                  >
+                    <Input 
+                      placeholder="Ask a question..." 
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      disabled={isChatLoading}
+                      className="flex-1 bg-muted/50 border-transparent focus-visible:ring-brand"
+                    />
+                    <Button type="submit" size="sm" disabled={!chatInput.trim() || isChatLoading} className="bg-brand text-primary-foreground hover:bg-brand/90">
+                      Send
+                    </Button>
+                  </form>
+                </SheetContent>
+              </Sheet>
             </motion.div>
           )}
           <button
@@ -272,9 +404,94 @@ export function PortalShell({
             <button className="rounded-xl border border-white/10 bg-white/5 p-2 text-muted-foreground hover:text-foreground">
               <Bell className="h-4 w-4" />
             </button>
-            <div className="ml-1 grid h-9 w-9 place-items-center rounded-full bg-gradient-brand text-xs font-semibold text-white">
-              {(name || "GU").slice(0, 2).toUpperCase()}
-            </div>
+            <button
+              onClick={toggleTheme}
+              className="rounded-xl border border-white/10 bg-white/5 p-2 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </button>
+            <Sheet>
+              <SheetTrigger asChild>
+                <button className="ml-1 grid h-9 w-9 cursor-pointer place-items-center rounded-full bg-gradient-brand text-xs font-semibold text-white transition-all hover:opacity-90 hover:ring-2 hover:ring-brand/50 hover:ring-offset-2 hover:ring-offset-background focus:outline-none overflow-hidden">
+                  {profilePicture ? (
+                    <img src={profilePicture} alt="Profile" className="h-full w-full object-cover" />
+                  ) : (
+                    (name || "GU").slice(0, 2).toUpperCase()
+                  )}
+                </button>
+              </SheetTrigger>
+              <SheetContent className="flex flex-col">
+                <SheetHeader>
+                  <SheetTitle>Profile Settings</SheetTitle>
+                  <SheetDescription>
+                    Manage your profile details and preferences.
+                  </SheetDescription>
+                </SheetHeader>
+                <div className="mt-6 flex flex-1 flex-col gap-6">
+                  <div className="flex flex-col items-center gap-3">
+                    {profilePicture ? (
+                      <img src={profilePicture} alt="Profile" className="h-24 w-24 rounded-full object-cover shadow-sm" />
+                    ) : (
+                      <div className="grid h-24 w-24 place-items-center rounded-full bg-gradient-brand text-3xl font-semibold text-white shadow-sm">
+                        {(name || "GU").slice(0, 2).toUpperCase()}
+                      </div>
+                    )}
+                    <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
+                    <Button variant="outline" size="sm" className="h-8" onClick={() => fileInputRef.current?.click()}>Change Picture</Button>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="profile-name">Name</Label>
+                    <Input id="profile-name" value={name || ""} onChange={(e) => updateProfile({ name: e.target.value })} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="profile-age">Age</Label>
+                      <Input id="profile-age" type="number" value={age || ""} onChange={(e) => updateProfile({ age: e.target.value })} placeholder="e.g. 21" />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="profile-profession">Profession</Label>
+                      <Select value={profession || ""} onValueChange={(value) => updateProfile({ profession: value })}>
+                        <SelectTrigger id="profile-profession">
+                          <SelectValue placeholder="Select..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Student">Student</SelectItem>
+                          <SelectItem value="Teacher">Teacher</SelectItem>
+                          <SelectItem value="Developer">Developer</SelectItem>
+                          <SelectItem value="Designer">Designer</SelectItem>
+                          <SelectItem value="Other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="profile-education">Educational Qualification</Label>
+                    <Input id="profile-education" value={education || ""} onChange={(e) => updateProfile({ education: e.target.value })} placeholder="e.g. B.Sc. Computer Science" />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="profile-organization">Organization</Label>
+                    <Input id="profile-organization" value={organization || ""} onChange={(e) => updateProfile({ organization: e.target.value })} placeholder="e.g. Stanford University / Acme Corp" />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="profile-bio">Bio</Label>
+                    <Textarea id="profile-bio" value={bio || ""} onChange={(e) => updateProfile({ bio: e.target.value })} placeholder="A short bio about yourself..." className="resize-none h-20" />
+                  </div>
+                  <div className="mt-auto pt-6">
+                    <Button
+                      variant="destructive"
+                      className="w-full justify-start gap-2"
+                      onClick={() => {
+                        logout();
+                        navigate({ to: "/" });
+                      }}
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Sign out
+                    </Button>
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
         </header>
 

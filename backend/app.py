@@ -594,7 +594,7 @@ def scan_qr():
         
     from utils.qr_generator import verify_qr_payload
     if not verify_qr_payload(qr_payload):
-        return jsonify({"status": "invalid_qr"}), 400
+        return jsonify({"success": False, "message": f"AI generation failed: {str(e)}"}), 500
         
     participant_id = qr_payload.get("participant_id")
     hackathon_id = qr_payload.get("hackathon_id")
@@ -1522,6 +1522,69 @@ try:
     logger.info("MongoDB indexes ensured.")
 except Exception as e:
     logger.warning("Could not ensure indexes: %s", e)
+
+# ═════════════════════════════════════════════════════════════════════════════
+# ROUTE: POST /api/copilot/chat
+# ═════════════════════════════════════════════════════════════════════════════
+
+@app.post("/api/copilot/chat")
+def copilot_chat():
+    from utils.mongodb import copilot_sessions_col
+    from utils.gemini_service import chat_with_copilot
+    from datetime import datetime, timezone
+    
+    payload = request.get_json(silent=True)
+    if not payload:
+        return error("JSON body required.")
+        
+    email = payload.get("email")
+    message = payload.get("message")
+    if not email or not message:
+        return error("email and message are required.", status=400)
+        
+    email = email.lower().strip()
+    
+    # 1. Fetch existing session
+    session = copilot_sessions_col().find_one({"user_email": email})
+    if not session:
+        session = {
+            "user_email": email,
+            "messages": [],
+            "created_at": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc)
+        }
+    
+    history = session.get("messages", [])
+    
+    # 2. Call Gemini
+    try:
+        reply = chat_with_copilot(history, message)
+    except Exception as exc:
+        logger.error("Copilot chat failed: %s", exc)
+        return error("AI generation failed.", status=500)
+        
+    # 3. Append new messages
+    history.append({"role": "user", "parts": [message]})
+    history.append({"role": "model", "parts": [reply]})
+    
+    # 4. Save back to Mongo
+    copilot_sessions_col().update_one(
+        {"user_email": email},
+        {
+            "$set": {
+                "messages": history,
+                "updated_at": datetime.now(timezone.utc)
+            },
+            "$setOnInsert": {
+                "user_email": email,
+                "created_at": datetime.now(timezone.utc)
+            }
+        },
+        upsert=True
+    )
+    
+    return success(data={"reply": reply, "history": history})
+
 
 if __name__ == "__main__":
     logger.info("🚀  HackOS AI Backend starting on port %d …", config.PORT)

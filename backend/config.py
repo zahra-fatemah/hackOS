@@ -8,7 +8,7 @@ import os
 from dotenv import load_dotenv
 
 # Load .env from the same directory as this file
-load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
+load_dotenv(os.path.join(os.path.dirname(__file__), ".env"), override=True)
 
 
 # ── MongoDB ───────────────────────────────────────────────────────────────────
@@ -42,3 +42,5 @@ SMTP_SERVER: str = os.getenv("SMTP_SERVER", "smtp.gmail.com")
 SMTP_PORT: int = int(os.getenv("SMTP_PORT", "587"))
 SMTP_USERNAME: str = os.getenv("SMTP_USERNAME", "")
 SMTP_PASSWORD: str = os.getenv("SMTP_PASSWORD", "")
+
+
